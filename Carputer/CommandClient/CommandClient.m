@@ -13,6 +13,9 @@
 @synthesize delegate = _delegate;
 @synthesize isConnected = _isConnected;
 @synthesize isConnecting = _isConnecting;
+@synthesize serialNumber = _serialNumber;
+@synthesize lastDataReceived = _lastDataReceived;
+
 NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
 
 - (id)init {
@@ -31,7 +34,7 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
     return self;
 }
 
-- (id)initWithHostname:(NSString *)hostname port:(ushort)port {
+- (id)initWithHostname:(NSString *)hostname port:(ushort)port serialNumber:(NSString *)serialNumber {
     // Call to self
     self = [self init];
     if (!self)
@@ -40,6 +43,7 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
     // Store properties
     _hostname = hostname;
     _port = port;
+    _serialNumber = serialNumber;
     
     return self;
 }
@@ -173,6 +177,7 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
         while ((bytesRead = [_commandInputStream read:buf maxLength:nextBytesToRead]) > 0)
         {
             // Return if cancelled
+            self.lastDataReceived = [NSDate date];
             if ([NSThread currentThread].isCancelled)
                 return;
             

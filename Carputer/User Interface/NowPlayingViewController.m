@@ -12,6 +12,7 @@
 #import "PlaylistPreviousCommand.h"
 #import "ToggleShuffleCommand.h"
 #import "ToggleRepeatCommand.h"
+#import "AudioFileFactory.h"
 
 @interface NowPlayingViewController ()
 - (NSString *)timeStringForSeconds:(int)seconds;
@@ -52,7 +53,7 @@
 
 - (void)processNotification:(NetworkAudioStatusNotification *)status {
     // Ignore if we're not parsing these
-    if (!_parseNotifications)
+    if ((!_parseNotifications) || ([status class] != [NetworkAudioStatusNotification class]))
         return;
     
     // Callback to UI
@@ -123,6 +124,10 @@
         _durationLabel.text = [self timeStringForSeconds:status.duration];
         _durationSlider.maximumValue = status.duration;
         reloadTableView = YES;
+        UIImage * image = [[AudioFileFactory applicationInstance] imageForArtist:thisTrack.artist album:thisTrack.album];
+        if (!image)
+            image = [UIImage imageNamed:@"MusicFolderWooden"];
+        _artworkImageView.image = image;
     }
     _durationLabel.text = [self timeStringForSeconds:status.duration == 0 ? [thisTrack.duration intValue] : status.duration];
     if (!_isScrubDown)

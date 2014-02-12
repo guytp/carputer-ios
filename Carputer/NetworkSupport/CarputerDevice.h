@@ -15,7 +15,8 @@
 @property (strong, readonly) NSString * hostname;
 @property (assign, readonly) ushort commandPort;
 @property (assign, readonly) ushort notificationPort;
+@property (assign, readonly) NSString * serialNumber;
 @property (strong) NSDate * lastUpdated;
 
-- (id)initWithIpAddress:(NSString *)ipAddress hostname:(NSString *)hostname commandPort:(ushort)commandPort notificationPort:(ushort)notificationPort audioSupport:(BOOL)audioSupport;
+- (id)initWithIpAddress:(NSString *)ipAddress hostname:(NSString *)hostname commandPort:(ushort)commandPort notificationPort:(ushort)notificationPort audioSupport:(BOOL)audioSupport serialNumber:(NSString *)serialNumber;
 @end

@@ -7,11 +7,76 @@
 #import "ClientController.h"
 #import "NetworkAudioStatusNotification.h"
 #import "NotificationClient.h"
+#import "NetworkAudioLibraryUpdateNotification.h"
+#import "NetworkAudioFile.h"
 
 @implementation AlbumListViewController 
+- (void)viewDidLoad {
+    // Hookup to NSNotificationCenter
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(networkNotification:) name:kNotificationClientNotificationName object:nil];
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+
+- (void)networkNotification:(NSNotification *) notification {
+    // Return if its a notification we don't care about
+    if (![notification.object isKindOfClass:[NetworkAudioLibraryUpdateNotification class]])
+        return;
+    
+    // If this notification contains our artist we trigger a data reload
+    NetworkAudioLibraryUpdateNotification * audioLibraryNotification = notification.object;
+    bool foundSameArtist = NO;
+    for (NetworkAudioFile * audioFile in audioLibraryNotification.onlineFiles)
+        if ([[audioFile.artist lowercaseString] isEqualToString:[_artist lowercaseString]])
+        {
+            foundSameArtist = YES;
+            break;
+        }
+    if (!foundSameArtist)
+        for (NetworkAudioFile * audioFile in audioLibraryNotification.updatedFiles)
+            if ([[audioFile.artist lowercaseString] isEqualToString:[_artist lowercaseString]])
+            {
+                foundSameArtist = YES;
+                break;
+            }
+    if (!foundSameArtist)
+        for (NetworkAudioFile * audioFile in audioLibraryNotification.addedFiles)
+            if ([[audioFile.artist lowercaseString] isEqualToString:[_artist lowercaseString]])
+            {
+                foundSameArtist = YES;
+                break;
+            }
+    if (!foundSameArtist)
+        for (AudioFile * audioFile in audioLibraryNotification.deletedFiles)
+            if ([[audioFile.artist lowercaseString] isEqualToString:[_artist lowercaseString]])
+            {
+                foundSameArtist = YES;
+                break;
+            }
+    if (!foundSameArtist)
+        for (AudioFile * audioFile in audioLibraryNotification.offlineFiles)
+            if ([[audioFile.artist lowercaseString] isEqualToString:[_artist lowercaseString]])
+            {
+                foundSameArtist = YES;
+                break;
+            }
+    
+    // We trigger data re-binding now
+    [self setArtist:_artist];
+}
 
 - (void)setArtist:(NSString *)artist
 {
+    // Callback on main thread if required
+    if (![NSThread currentThread].isMainThread)
+    {
+        [self performSelectorOnMainThread:@selector(setArtist:) withObject:artist waitUntilDone:NO];
+        return;
+    }
+
     self.tableView.backgroundColor = [UIColor blackColor];
 
     @synchronized (_dataSource)

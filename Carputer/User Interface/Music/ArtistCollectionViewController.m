@@ -7,13 +7,21 @@
 #import "AlbumListViewController.h"
 #import "NotificationClient.h"
 #import "NetworkAudioStatusNotification.h"
+#import "NetworkAudioLibraryUpdateNotification.h"
 
 @interface ArtistCollectionViewController()
 - (void) updateDataSource;
 @end
 
 @implementation ArtistCollectionViewController
+
 @synthesize indexView = _indexView;
+
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
 
 - (void)viewWillAppear:(BOOL)animated {
     // Get a handle to audio data and parse out for displaying in table
@@ -21,10 +29,29 @@
 }
 
 - (void)viewDidLoad {
+    // Add index view
     [self.view addSubview:self.indexView];
+
+    // Hookup to NSNotificationCenter
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(networkNotification:) name:kNotificationClientNotificationName object:nil];
 }
 
+- (void)networkNotification:(NSNotification *) notification {
+    // Return if its a notification we don't care about
+    if (![notification.object isKindOfClass:[NetworkAudioLibraryUpdateNotification class]])
+        return;
+    [self updateDataSource];
+}
+
+
 - (void) updateDataSource {
+    // Callback to UI if required
+    if (![NSThread currentThread].isMainThread)
+    {
+        [self performSelectorOnMainThread:@selector(updateDataSource) withObject:nil waitUntilDone:NO];
+        return;
+    }
+    
     // If data source doesn't exist create it, otherwise clear it
     if (!_dataSource)
         _dataSource = [NSMutableArray array];
@@ -77,7 +104,7 @@
 {
     NSString * artist = [[_dataSource objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
     ArtistCollectionViewCell * cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"ArtistCollectionViewCell" forIndexPath:indexPath];
-    [cell setupForArtist:artist withImage:nil];
+    [cell setupForArtist:artist withImage:[[AudioFileFactory applicationInstance] imageForArtist:artist]];
     return cell;
 }
 

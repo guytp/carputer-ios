@@ -1,11 +1,3 @@
-//
-//  AudioFile.h
-//  Carputer
-//
-//  Created by Guy Powell on 05/01/2014.
-//  Copyright (c) 2014 Guytp. All rights reserved.
-//
-
 #import <Foundation/Foundation.h>
 #import <CoreData/CoreData.h>
 
@@ -20,8 +12,12 @@
 @property (nonatomic, retain) NSNumber * duration;
 @property (nonatomic, retain) NSString * device;
 @property (nonatomic, retain) NSDate * lastSeen;
-@property (nonatomic, retain) NSNumber * seenInLastSync;
 @property (nonatomic, retain) NSNumber * playCount;
 @property (nonatomic, retain) NSNumber * isOnline;
+
+// An empty string indicates that we've checked but there is no file, a null
+// value indicates we have not yet checked
+@property (nonatomic, retain) NSString * artistArtworkFile;
+@property (nonatomic, retain) NSString * albumArtworkFile;
 
 @end

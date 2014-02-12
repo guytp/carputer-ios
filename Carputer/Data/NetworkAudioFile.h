@@ -8,4 +8,6 @@
 @property (nonatomic, strong) NSString * title;
 @property (nonatomic, strong) NSNumber * trackNumber;
 @property (nonatomic, strong) NSNumber * duration;
+
+- (id)initWithJsonObject:(NSDictionary *)audioFileDictionary;
 @end

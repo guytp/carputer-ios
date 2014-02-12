@@ -36,23 +36,7 @@
         }
         
         // Parse out to an AudioFie object
-        NetworkAudioFile * audioFile = [[NetworkAudioFile alloc] init];
-        audioFile.audioFileId = [audioFileDictionary objectForKey:@"AudioFileId"];
-        audioFile.artist = [audioFileDictionary objectForKey:@"Artist"];
-        if ([audioFile.artist isKindOfClass:[NSNull class]])
-            audioFile.artist = nil;
-        audioFile.album = [audioFileDictionary objectForKey:@"Album"];
-        if ([audioFile.album isKindOfClass:[NSNull class]])
-            audioFile.album = nil;
-        audioFile.title = [audioFileDictionary objectForKey:@"Title"];
-        if ([audioFile.title isKindOfClass:[NSNull class]])
-            audioFile.title = nil;
-        audioFile.trackNumber = [audioFileDictionary objectForKey:@"TrackNumber"];
-        if ([audioFile.trackNumber isKindOfClass:[NSNull class]])
-            audioFile.trackNumber = nil;
-        audioFile.duration = [audioFileDictionary objectForKey:@"DurationSeconds"];
-        if ([audioFile.duration isKindOfClass:[NSNull class]])
-            audioFile.duration = nil;
+        NetworkAudioFile * audioFile = [[NetworkAudioFile alloc] initWithJsonObject:audioFileDictionary];
         [audioFiles addObject:audioFile];
     }
     return audioFiles;

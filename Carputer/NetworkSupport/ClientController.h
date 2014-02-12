@@ -4,6 +4,9 @@
 #import "ClientControllerDelegate.h"
 #import "CommandClientDelegate.h"
 #import "NotificationClientDelegate.h"
+@class AudioFile;
+
+extern NSString * kClientControllerNewArtworkNotificationName;
 
 @interface ClientController : NSObject <CommandClientDelegate, NotificationClientDelegate> {
     @private
@@ -13,6 +16,9 @@
     NSMutableDictionary * _notificationClients;
     int _lastTotalCount;
     int _lastConnectedCount;
+    NSString * _localIp;
+    BOOL _awaitingArtworkResponse;
+    AudioFile * _artworkAudioFile;
 }
 
 + (ClientController *) applicationInstance;

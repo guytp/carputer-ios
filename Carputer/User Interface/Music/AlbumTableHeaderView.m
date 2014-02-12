@@ -4,6 +4,7 @@
 #import "PlaylistQueueCommand.h"
 #import "AppDelegate.h"
 #import "AlbumListViewController.h"
+#import "AudioFileFactory.h"
 
 @implementation AlbumTableHeaderView
 
@@ -12,7 +13,8 @@
     _album = audioFiles;
     
     // Set album details
-    _albumLabel.text = ((AudioFile *)[audioFiles objectAtIndex:0]).album;
+    AudioFile * audioFile = [audioFiles objectAtIndex:0];
+    _albumLabel.text = audioFile.album;
     
     // Determine total duration
     int durationTotalSeconds = 0;
@@ -20,6 +22,13 @@
         durationTotalSeconds += [audioFile.duration intValue];
     int durationTotalMinutes = durationTotalSeconds / 60;
     _summaryLabel.text = [NSString stringWithFormat:@"%d songs %d minutes", [audioFiles count], durationTotalMinutes];
+    
+    // Setup image
+    UIImage * image = [[AudioFileFactory applicationInstance] imageForArtist:audioFile.artist album:audioFile.album];
+    if (!image)
+        image = [UIImage imageNamed:@"MusicFolderWooden"];
+    _artworkImage.image = image;
+    
 }
 
 - (IBAction)queuePlayAlbum:(id)sender {

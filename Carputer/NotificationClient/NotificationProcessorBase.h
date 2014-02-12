@@ -9,5 +9,5 @@
 @property (readonly, assign, nonatomic) int opCode;
 @property (readonly, assign, nonatomic) int notificationCode;
 
-- (id)notificationObjectForJson:(id)jsonObject deviceHostname:(NSString *)deviceHostname;
+- (id)notificationObjectForJson:(id)jsonObject deviceSerialNumber:(NSString *)deviceSerialNumber;
 @end

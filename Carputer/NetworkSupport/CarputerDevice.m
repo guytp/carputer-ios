@@ -7,9 +7,9 @@
 @synthesize commandPort = _commandPort;
 @synthesize notificationPort = _notificationPort;
 @synthesize lastUpdated = _lastUpdated;
+@synthesize serialNumber = _serialNumber;
 
-
-- (id)initWithIpAddress:(NSString *)ipAddress hostname:(NSString *)hostname commandPort:(ushort)commandPort notificationPort:(ushort)notificationPort audioSupport:(BOOL)audioSupport {
+- (id)initWithIpAddress:(NSString *)ipAddress hostname:(NSString *)hostname commandPort:(ushort)commandPort notificationPort:(ushort)notificationPort audioSupport:(BOOL)audioSupport serialNumber:(NSString *)serialNumber {
     // Call to self
     self = [self init];
     if (!self)
@@ -22,6 +22,7 @@
     _commandPort = commandPort;
     _notificationPort = notificationPort;
     _lastUpdated = [NSDate date];
+    _serialNumber = serialNumber;
     
     // Return self
     return self;

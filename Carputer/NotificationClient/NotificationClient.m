@@ -1,6 +1,8 @@
 #import "NotificationClient.h"
 #import "NotificationProcessorBase.h"
 #import "AudioStatusNotificationProcessor.h"
+#import "AudioLibraryUpdateNotificationProcessor.h"
+#import "AudioArtworkAvailableNotificationProcessor.h"
 #import "NSDictionary+Dictionary_ContainsKey.h"
 
 NSString * kNotificationClientNotificationName = @"NotificationClientNotification";
@@ -14,6 +16,7 @@ static NSMutableDictionary * _lastNotifications = nil;
 @synthesize delegate = _delegate;
 @synthesize isConnected = _isConnected;
 @synthesize isConnecting = _isConnecting;
+@synthesize lastDataReceived = _lastDataReceived;
 
 - (id)init {
     // Call to base
@@ -23,8 +26,7 @@ static NSMutableDictionary * _lastNotifications = nil;
     
     // Setup class
     _statusCheckTimer = [NSTimer scheduledTimerWithTimeInterval:0.3 target:self selector:@selector(statusCheckTimerTick:) userInfo:nil repeats:YES];
-    _processors = [NSMutableArray array];
-    [_processors addObject:[[AudioStatusNotificationProcessor alloc] init]];
+    _processors = [NSMutableArray arrayWithObjects:[[AudioStatusNotificationProcessor alloc] init], [[AudioLibraryUpdateNotificationProcessor alloc] init], [[AudioArtworkAvailableNotificationProcessor alloc] init], nil];
     if (!_lastNotifications)
         _lastNotifications = [NSMutableDictionary dictionary];
     
@@ -33,7 +35,7 @@ static NSMutableDictionary * _lastNotifications = nil;
     return self;
 }
 
-- (id)initWithHostname:(NSString *)hostname port:(ushort)port {
+- (id)initWithHostname:(NSString *)hostname port:(ushort)port serialNumber:(NSString *)serialNumber {
     // Call to self
     self = [self init];
     if (!self)
@@ -42,6 +44,7 @@ static NSMutableDictionary * _lastNotifications = nil;
     // Store properties
     _hostname = hostname;
     _port = port;
+    _serialNumber = serialNumber;
     
     return self;
 }
@@ -134,6 +137,7 @@ static NSMutableDictionary * _lastNotifications = nil;
         while ((bytesRead = [_inputStream read:buf maxLength:nextBytesToRead]) > 0)
         {
             // Return if cancelled
+            self.lastDataReceived = [NSDate date];
             if ([NSThread currentThread].isCancelled)
                 return;
             
@@ -203,12 +207,13 @@ static NSMutableDictionary * _lastNotifications = nil;
         id jsonObject = [NSJSONSerialization JSONObjectWithData:readBuffer options:kNilOptions error:&parseError];
         if (parseError)
         {
-            NSLog(@"Notification client unable to parse JSON for %d.%d notification: %@", notificationCode, opCode, parseError);
+            NSString * stringJson = [[NSString alloc] initWithData:readBuffer encoding:NSUTF8StringEncoding];
+            NSLog(@"Notification client unable to parse JSON for %d.%d notification\r\n\r\n%@\r\n\r\n%@", notificationCode, opCode, stringJson, parseError);
             continue;
         }
         
         // Get the notification object and send it out
-        id notificationObject = [processor notificationObjectForJson:jsonObject deviceHostname:@"Test"];
+        id notificationObject = [processor notificationObjectForJson:jsonObject deviceSerialNumber:_serialNumber];
         if (parseError || !notificationObject)
         {
             NSLog(@"Notification client has no object to post for %d.%d notification", notificationCode, opCode);
@@ -219,7 +224,7 @@ static NSMutableDictionary * _lastNotifications = nil;
         {
             [_lastNotifications setObject:notificationObject forKey:notificationTypeKey];
         }
-        NSLog(@"Notification client posting %d.%d notification as %@", notificationCode, opCode, notificationObject);
+//        NSLog(@"Notification client posting %d.%d notification as %@", notificationCode, opCode, notificationObject);
         [[NSNotificationCenter defaultCenter] postNotificationName:kNotificationClientNotificationName object:notificationObject];
     }
 }

@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		9D377C391885425F002A1240 /* TrackJumpCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D377C381885425F002A1240 /* TrackJumpCommand.m */; };
+		9D3F751F18A233B000164165 /* AudioArtworkAvailableNotificationProcessor.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D3F751E18A233B000164165 /* AudioArtworkAvailableNotificationProcessor.m */; };
+		9D3F752218A378B400164165 /* NetworkAudioArtworkAvailableNotification.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D3F752118A378B400164165 /* NetworkAudioArtworkAvailableNotification.m */; };
+		9D3F752618A4CD9700164165 /* WebViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D3F752518A4CD9700164165 /* WebViewController.m */; };
 		9D6102A4187A01EE00C93D2D /* AudioFileFactory.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D6102A3187A01EE00C93D2D /* AudioFileFactory.m */; };
 		9D6102A7187B280C00C93D2D /* AlbumListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D6102A6187B280C00C93D2D /* AlbumListViewController.m */; };
 		9D6102AA187BEF2C00C93D2D /* AlbumTrackTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D6102A9187BEF2C00C93D2D /* AlbumTrackTableViewCell.m */; };
@@ -30,6 +33,8 @@
 		9D8E9643188E66470010982D /* ToggleRepeatCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D8E9642188E66470010982D /* ToggleRepeatCommand.m */; };
 		9D8E9646188EF3DB0010982D /* CommandClientResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D8E9645188EF3DB0010982D /* CommandClientResponse.m */; };
 		9D9B40C318867C05008BA102 /* NoMusicViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D9B40C218867C05008BA102 /* NoMusicViewController.m */; };
+		9D9C4088189B978000310305 /* ArtworkGetCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D9C4087189B978000310305 /* ArtworkGetCommand.m */; };
+		9D9C408B189B9C1700310305 /* ArtworkGetResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D9C408A189B9C1700310305 /* ArtworkGetResponse.m */; };
 		9DA3B9E9187557EB00503E04 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DA3B9E8187557EB00503E04 /* Foundation.framework */; };
 		9DA3B9EB187557EB00503E04 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DA3B9EA187557EB00503E04 /* CoreGraphics.framework */; };
 		9DA3B9ED187557EB00503E04 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DA3B9EC187557EB00503E04 /* UIKit.framework */; };
@@ -57,6 +62,8 @@
 		9DA3BA4F1879E2EE00503E04 /* AudioLibraryGetCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 9DA3BA4E1879E2EE00503E04 /* AudioLibraryGetCommand.m */; };
 		9DA3BA551879EA8F00503E04 /* NetworkAudioFile.m in Sources */ = {isa = PBXBuildFile; fileRef = 9DA3BA541879EA8F00503E04 /* NetworkAudioFile.m */; };
 		9DA3BA5B1879FF2D00503E04 /* AudioFile.m in Sources */ = {isa = PBXBuildFile; fileRef = 9DA3BA5A1879FF2D00503E04 /* AudioFile.m */; };
+		9DE66B0D1892591B00D9CD27 /* NetworkAudioLibraryUpdateNotification.m in Sources */ = {isa = PBXBuildFile; fileRef = 9DE66B0C1892591B00D9CD27 /* NetworkAudioLibraryUpdateNotification.m */; };
+		9DE66B10189259D200D9CD27 /* AudioLibraryUpdateNotificationProcessor.m in Sources */ = {isa = PBXBuildFile; fileRef = 9DE66B0F189259D200D9CD27 /* AudioLibraryUpdateNotificationProcessor.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +79,12 @@
 /* Begin PBXFileReference section */
 		9D377C371885425F002A1240 /* TrackJumpCommand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TrackJumpCommand.h; sourceTree = "<group>"; };
 		9D377C381885425F002A1240 /* TrackJumpCommand.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TrackJumpCommand.m; sourceTree = "<group>"; };
+		9D3F751D18A233B000164165 /* AudioArtworkAvailableNotificationProcessor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AudioArtworkAvailableNotificationProcessor.h; sourceTree = "<group>"; };
+		9D3F751E18A233B000164165 /* AudioArtworkAvailableNotificationProcessor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AudioArtworkAvailableNotificationProcessor.m; sourceTree = "<group>"; };
+		9D3F752018A378B400164165 /* NetworkAudioArtworkAvailableNotification.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetworkAudioArtworkAvailableNotification.h; sourceTree = "<group>"; };
+		9D3F752118A378B400164165 /* NetworkAudioArtworkAvailableNotification.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NetworkAudioArtworkAvailableNotification.m; sourceTree = "<group>"; };
+		9D3F752418A4CD9700164165 /* WebViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebViewController.h; sourceTree = "<group>"; };
+		9D3F752518A4CD9700164165 /* WebViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebViewController.m; sourceTree = "<group>"; };
 		9D6102A2187A01EE00C93D2D /* AudioFileFactory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AudioFileFactory.h; sourceTree = "<group>"; };
 		9D6102A3187A01EE00C93D2D /* AudioFileFactory.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AudioFileFactory.m; sourceTree = "<group>"; };
 		9D6102A5187B280C00C93D2D /* AlbumListViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AlbumListViewController.h; sourceTree = "<group>"; };
@@ -116,6 +129,10 @@
 		9D8E9645188EF3DB0010982D /* CommandClientResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CommandClientResponse.m; sourceTree = "<group>"; };
 		9D9B40C118867C05008BA102 /* NoMusicViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NoMusicViewController.h; sourceTree = "<group>"; };
 		9D9B40C218867C05008BA102 /* NoMusicViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NoMusicViewController.m; sourceTree = "<group>"; };
+		9D9C4086189B978000310305 /* ArtworkGetCommand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ArtworkGetCommand.h; sourceTree = "<group>"; };
+		9D9C4087189B978000310305 /* ArtworkGetCommand.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ArtworkGetCommand.m; sourceTree = "<group>"; };
+		9D9C4089189B9C1700310305 /* ArtworkGetResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ArtworkGetResponse.h; sourceTree = "<group>"; };
+		9D9C408A189B9C1700310305 /* ArtworkGetResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ArtworkGetResponse.m; sourceTree = "<group>"; };
 		9DA3B9E5187557EB00503E04 /* Carputer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Carputer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9DA3B9E8187557EB00503E04 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9DA3B9EA187557EB00503E04 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -163,6 +180,10 @@
 		9DA3BA541879EA8F00503E04 /* NetworkAudioFile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NetworkAudioFile.m; sourceTree = "<group>"; };
 		9DA3BA591879FF2D00503E04 /* AudioFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AudioFile.h; sourceTree = "<group>"; };
 		9DA3BA5A1879FF2D00503E04 /* AudioFile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AudioFile.m; sourceTree = "<group>"; };
+		9DE66B0B1892591B00D9CD27 /* NetworkAudioLibraryUpdateNotification.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetworkAudioLibraryUpdateNotification.h; sourceTree = "<group>"; };
+		9DE66B0C1892591B00D9CD27 /* NetworkAudioLibraryUpdateNotification.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NetworkAudioLibraryUpdateNotification.m; sourceTree = "<group>"; };
+		9DE66B0E189259D200D9CD27 /* AudioLibraryUpdateNotificationProcessor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AudioLibraryUpdateNotificationProcessor.h; sourceTree = "<group>"; };
+		9DE66B0F189259D200D9CD27 /* AudioLibraryUpdateNotificationProcessor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AudioLibraryUpdateNotificationProcessor.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -189,6 +210,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9D3F752318A4CD7600164165 /* Web */ = {
+			isa = PBXGroup;
+			children = (
+				9D3F752418A4CD9700164165 /* WebViewController.h */,
+				9D3F752518A4CD9700164165 /* WebViewController.m */,
+			);
+			path = Web;
+			sourceTree = "<group>";
+		};
 		9D6102B3187DD25A00C93D2D /* NotificationClient */ = {
 			isa = PBXGroup;
 			children = (
@@ -199,6 +229,10 @@
 				9D6102BA187DD4CD00C93D2D /* NotificationClientDelegate.h */,
 				9D6102BE187E948300C93D2D /* AudioStatusNotificationProcessor.h */,
 				9D6102BF187E948300C93D2D /* AudioStatusNotificationProcessor.m */,
+				9DE66B0E189259D200D9CD27 /* AudioLibraryUpdateNotificationProcessor.h */,
+				9DE66B0F189259D200D9CD27 /* AudioLibraryUpdateNotificationProcessor.m */,
+				9D3F751D18A233B000164165 /* AudioArtworkAvailableNotificationProcessor.h */,
+				9D3F751E18A233B000164165 /* AudioArtworkAvailableNotificationProcessor.m */,
 			);
 			path = NotificationClient;
 			sourceTree = "<group>";
@@ -292,6 +326,8 @@
 				9D8E963F188E663F0010982D /* ToggleShuffleCommand.m */,
 				9D8E9641188E66470010982D /* ToggleRepeatCommand.h */,
 				9D8E9642188E66470010982D /* ToggleRepeatCommand.m */,
+				9D9C4086189B978000310305 /* ArtworkGetCommand.h */,
+				9D9C4087189B978000310305 /* ArtworkGetCommand.m */,
 				9D8E9644188EF3DB0010982D /* CommandClientResponse.h */,
 				9D8E9645188EF3DB0010982D /* CommandClientResponse.m */,
 			);
@@ -315,6 +351,7 @@
 		9DA3BA3B1878FCDA00503E04 /* User Interface */ = {
 			isa = PBXGroup;
 			children = (
+				9D3F752318A4CD7600164165 /* Web */,
 				9DA3BA3C1878FD5A00503E04 /* Music */,
 				9DA3B9FD187557EB00503E04 /* DebugViewController.h */,
 				9DA3B9FE187557EB00503E04 /* DebugViewController.m */,
@@ -364,6 +401,12 @@
 				9D6102A3187A01EE00C93D2D /* AudioFileFactory.m */,
 				9D6102BB187E940800C93D2D /* NetworkAudioStatusNotification.h */,
 				9D6102BC187E940800C93D2D /* NetworkAudioStatusNotification.m */,
+				9DE66B0B1892591B00D9CD27 /* NetworkAudioLibraryUpdateNotification.h */,
+				9DE66B0C1892591B00D9CD27 /* NetworkAudioLibraryUpdateNotification.m */,
+				9D9C4089189B9C1700310305 /* ArtworkGetResponse.h */,
+				9D9C408A189B9C1700310305 /* ArtworkGetResponse.m */,
+				9D3F752018A378B400164165 /* NetworkAudioArtworkAvailableNotification.h */,
+				9D3F752118A378B400164165 /* NetworkAudioArtworkAvailableNotification.m */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -475,34 +518,41 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9D3F752618A4CD9700164165 /* WebViewController.m in Sources */,
 				9D6102B2187CABFB00C93D2D /* PlaylistQueueCommand.m in Sources */,
 				9DA3BA2118755E8E00503E04 /* CommandClient.m in Sources */,
 				9D8E9634188DCE4F0010982D /* NothingPlayingViewController.m in Sources */,
 				9D6102C6187FE18B00C93D2D /* PlaylistTableViewCell.m in Sources */,
+				9D9C408B189B9C1700310305 /* ArtworkGetResponse.m in Sources */,
 				9D6102CF1881F4E000C93D2D /* BDKCollectionIndexView.m in Sources */,
 				9DA3BA4518790CD000503E04 /* CollectionSectionHeaderView.m in Sources */,
+				9D3F751F18A233B000164165 /* AudioArtworkAvailableNotificationProcessor.m in Sources */,
 				9DA3B9FF187557EB00503E04 /* DebugViewController.m in Sources */,
 				9D6102AA187BEF2C00C93D2D /* AlbumTrackTableViewCell.m in Sources */,
 				9DA3BA551879EA8F00503E04 /* NetworkAudioFile.m in Sources */,
 				9D6102CC1880741A00C93D2D /* PlaylistJumpCommand.m in Sources */,
 				9DA3BA3F1878FD8C00503E04 /* ArtistCollectionViewController.m in Sources */,
+				9DE66B10189259D200D9CD27 /* AudioLibraryUpdateNotificationProcessor.m in Sources */,
 				9DA3BA421878FEA400503E04 /* ArtistCollectionViewCell.m in Sources */,
 				9D6102C3187F1B5600C93D2D /* NowPlayingViewController.m in Sources */,
 				9D6102C0187E948300C93D2D /* AudioStatusNotificationProcessor.m in Sources */,
 				9DA3BA5B1879FF2D00503E04 /* AudioFile.m in Sources */,
 				9D8E9646188EF3DB0010982D /* CommandClientResponse.m in Sources */,
 				9D6102C91880728500C93D2D /* PauseToggleCommand.m in Sources */,
+				9DE66B0D1892591B00D9CD27 /* NetworkAudioLibraryUpdateNotification.m in Sources */,
 				9D6102A4187A01EE00C93D2D /* AudioFileFactory.m in Sources */,
 				9D6102A7187B280C00C93D2D /* AlbumListViewController.m in Sources */,
 				9DA3BA331877938800503E04 /* ClientController.m in Sources */,
 				9DA3BA2A1877136C00503E04 /* NSDictionary+Dictionary_ContainsKey.m in Sources */,
 				9D6102B6187DD27E00C93D2D /* NotificationClient.m in Sources */,
 				9DA3B9F9187557EB00503E04 /* AppDelegate.m in Sources */,
+				9D9C4088189B978000310305 /* ArtworkGetCommand.m in Sources */,
 				9DA3BA4F1879E2EE00503E04 /* AudioLibraryGetCommand.m in Sources */,
 				9D8E963D188E66380010982D /* PlaylistPreviousCommand.m in Sources */,
 				9DA3B9F5187557EB00503E04 /* main.m in Sources */,
 				9D8E9643188E66470010982D /* ToggleRepeatCommand.m in Sources */,
 				9D8E9640188E663F0010982D /* ToggleShuffleCommand.m in Sources */,
+				9D3F752218A378B400164165 /* NetworkAudioArtworkAvailableNotification.m in Sources */,
 				9DA3BA391877AA2000503E04 /* CarputerDevice.m in Sources */,
 				9D6102AF187C754200C93D2D /* AlbumTableHeaderView.m in Sources */,
 				9D9B40C318867C05008BA102 /* NoMusicViewController.m in Sources */,

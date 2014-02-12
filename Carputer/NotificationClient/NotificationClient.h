@@ -15,6 +15,7 @@ extern NSString * kNotificationClientNotificationName;
     NSDate * _connectionStartTime;
     NSMutableArray * _processors;
     NSThread * _processingThread;
+    NSString * _serialNumber;
 }
 
 @property (retain) NSString * hostname;
@@ -22,8 +23,9 @@ extern NSString * kNotificationClientNotificationName;
 @property (retain) NSObject<NotificationClientDelegate> * delegate;
 @property (assign, readonly) BOOL isConnected;
 @property (assign, readonly) BOOL isConnecting;
+@property (strong, atomic) NSDate * lastDataReceived;
 
-- (id)initWithHostname:(NSString *)hostname port:(ushort)port;
+- (id)initWithHostname:(NSString *)hostname port:(ushort)port serialNumber:(NSString *)serialNumber;
 - (void)connect;
 - (void)disconnect;
 + (id)lastNotificationOfType:(NSString *)type;

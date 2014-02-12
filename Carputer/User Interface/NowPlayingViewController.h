@@ -19,6 +19,7 @@
     IBOutlet UIBarButtonItem * _shuffleButton;
     IBOutlet UIBarButtonItem * _repeatButton;
     IBOutlet UIToolbar * _toolbar;
+    IBOutlet UIImageView * _artworkImageView;
     @private
     NSDate * _lastDragSlider;
     AudioFile * _audioTrack;

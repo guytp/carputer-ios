@@ -28,15 +28,18 @@ enum CommandClientError {
     StartCommandThreadDefinition * _currentThreadCommandDefinition;
     NSThread * _currentThread;
     NSDate * _currentThreadStartTime;
+    NSString * _serialNumber;
 }
 
 @property (retain) NSString * hostname;
+@property (retain) NSString * serialNumber;
 @property (assign) ushort port;
 @property (retain) NSObject<CommandClientDelegate> * delegate;
 @property (assign, readonly) BOOL isConnected;
 @property (assign, readonly) BOOL isConnecting;
+@property (strong, atomic) NSDate * lastDataReceived;
 
-- (id)initWithHostname:(NSString *)hostname port:(ushort)port;
+- (id)initWithHostname:(NSString *)hostname port:(ushort)port serialNumber:(NSString *)serialNumber;
 - (void)connect;
 - (void)disconnect;
 

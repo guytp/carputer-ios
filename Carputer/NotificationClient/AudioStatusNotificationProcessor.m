@@ -18,7 +18,7 @@
     return self;
 }
 
-- (id)notificationObjectForJson:(id)jsonObject deviceHostname:(NSString *)deviceHostname {
+- (id)notificationObjectForJson:(id)jsonObject deviceSerialNumber:(NSString *)deviceSerialNumber {
     // Return if not right data source
     if (![[jsonObject class] isSubclassOfClass:[NSDictionary class]])
     {
@@ -29,7 +29,7 @@
     
     // Extract all data and return the notification object
     NetworkAudioStatusNotification * n = [[NetworkAudioStatusNotification alloc] init];
-    n.deviceIdentifier = deviceHostname;
+    n.deviceIdentifier = deviceSerialNumber;
     n.playlistPosition = [((NSNumber *)[jsonDictionary objectForKey:@"PlaylistPosition"]) intValue];
     n.isPaused = [((NSNumber *)[jsonDictionary objectForKey:@"IsPaused"]) boolValue];
     n.isPlaying = [((NSNumber *)[jsonDictionary objectForKey:@"IsPlaying"]) boolValue];
@@ -43,7 +43,7 @@
     NSMutableArray * playlist = [NSMutableArray array];
     for (NSNumber * track in tracks)
     {
-        AudioFile * audioFile = [[AudioFileFactory applicationInstance] readForId:track forDevice:deviceHostname];
+        AudioFile * audioFile = [[AudioFileFactory applicationInstance] readForId:track forDevice:deviceSerialNumber];
         if (audioFile)
             [playlist addObject:audioFile];
     }

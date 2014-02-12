@@ -11,8 +11,9 @@
 @dynamic duration;
 @dynamic device;
 @dynamic lastSeen;
-@dynamic seenInLastSync;
 @dynamic playCount;
 @dynamic isOnline;
+@dynamic artistArtworkFile;
+@dynamic albumArtworkFile;
 
 @end

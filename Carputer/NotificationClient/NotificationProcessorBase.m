@@ -6,7 +6,7 @@
 @synthesize notificationCode = _notificationCode;
 
 
-- (id)notificationObjectForJson:(id)jsonObject deviceHostname:(NSString *)deviceHostname {
+- (id)notificationObjectForJson:(id)jsonObject deviceSerialNumber:(NSString *)deviceSerialNumber {
     return nil;
 }
 @end

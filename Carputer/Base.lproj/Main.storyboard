@@ -4,6 +4,113 @@
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="3747"/>
     </dependencies>
     <scenes>
+        <!--Web-->
+        <scene sceneID="vg9-Bl-hqW">
+            <objects>
+                <viewController title="Web" id="2r3-ET-ywD" userLabel="Web" customClass="WebViewController" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="It7-uW-IIc">
+                        <rect key="frame" x="0.0" y="0.0" width="1024" height="768"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                        <subviews>
+                            <webView opaque="NO" contentMode="scaleToFill" scalesPageToFit="YES" keyboardDisplayRequiresUserAction="NO" id="zgo-8s-8VS">
+                                <rect key="frame" x="0.0" y="85" width="1024" height="683"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <color key="backgroundColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                <dataDetectorType key="dataDetectorTypes" phoneNumber="YES" link="YES" address="YES" calendarEvent="YES"/>
+                                <connections>
+                                    <outlet property="delegate" destination="2r3-ET-ywD" id="Pha-rQ-6SN"/>
+                                </connections>
+                            </webView>
+                            <view contentMode="scaleToFill" id="j9o-eI-VS3" userLabel="Header Area">
+                                <rect key="frame" x="0.0" y="0.0" width="1024" height="85"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                <subviews>
+                                    <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Search or enter web address" textAlignment="center" minimumFontSize="17" clearButtonMode="whileEditing" id="3Ah-CK-ksN" userLabel="Url Input">
+                                        <rect key="frame" x="200" y="23" width="624" height="30"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <color key="backgroundColor" cocoaTouchSystemColor="darkTextColor"/>
+                                        <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                        <textInputTraits key="textInputTraits" autocorrectionType="no" keyboardType="URL" keyboardAppearance="alert" returnKeyType="search" enablesReturnKeyAutomatically="YES"/>
+                                        <connections>
+                                            <outlet property="delegate" destination="2r3-ET-ywD" id="cL0-Jg-JQs"/>
+                                        </connections>
+                                    </textField>
+                                    <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="Trg-U2-PVw" userLabel="Status">
+                                        <rect key="frame" x="20" y="58" width="984" height="21"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                        <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" style="white" id="yxe-0k-C0a">
+                                        <rect key="frame" x="9" y="59" width="20" height="20"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                    </activityIndicatorView>
+                                    <button opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" id="hfY-2S-kyg" userLabel="Button - Back">
+                                        <rect key="frame" x="20" y="25" width="25" height="25"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <state key="normal" image="BackButton">
+                                            <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <connections>
+                                            <action selector="previousPressed:" destination="2r3-ET-ywD" eventType="touchUpInside" id="HPo-G0-NGU"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" id="Xdn-TJ-2J6" userLabel="Button - Forward">
+                                        <rect key="frame" x="74" y="25" width="25" height="25"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <state key="normal" image="ForwardButton">
+                                            <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <connections>
+                                            <action selector="previousPressed:" destination="2r3-ET-ywD" eventType="touchUpInside" id="TTf-On-CE6"/>
+                                        </connections>
+                                    </button>
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" id="lJl-rG-5qM" userLabel="Button - Cancel">
+                                        <rect key="frame" x="840" y="25" width="25" height="25"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <state key="normal" image="CancelButton">
+                                            <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <connections>
+                                            <action selector="cancelPressed:" destination="2r3-ET-ywD" eventType="touchUpInside" id="FU9-0B-Geu"/>
+                                        </connections>
+                                    </button>
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" id="MvX-xo-YhI" userLabel="Button - Reload">
+                                        <rect key="frame" x="840" y="25" width="25" height="25"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <state key="normal" image="ReloadButton">
+                                            <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <connections>
+                                            <action selector="reloadPressed:" destination="2r3-ET-ywD" eventType="touchUpInside" id="DGe-gg-Amw"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                                <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
+                        <simulatedOrientationMetrics key="simulatedOrientationMetrics" orientation="landscapeRight"/>
+                    </view>
+                    <tabBarItem key="tabBarItem" title="Web" image="WebTabBar" id="lgB-iO-txs"/>
+                    <navigationItem key="navigationItem" id="VyF-cV-d0p"/>
+                    <connections>
+                        <outlet property="_activityIndicator" destination="yxe-0k-C0a" id="ZbI-ap-VnF"/>
+                        <outlet property="_backButton" destination="hfY-2S-kyg" id="Ect-og-Vbc"/>
+                        <outlet property="_cancelButton" destination="lJl-rG-5qM" id="Nk9-7m-zlR"/>
+                        <outlet property="_forwardButton" destination="Xdn-TJ-2J6" id="Kzb-BZ-EXd"/>
+                        <outlet property="_mainInput" destination="3Ah-CK-ksN" id="ZnZ-z9-pQU"/>
+                        <outlet property="_reloadButton" destination="MvX-xo-YhI" id="oXC-go-sCv"/>
+                        <outlet property="_status" destination="Trg-U2-PVw" id="hDY-Dk-zXI"/>
+                        <outlet property="_webView" destination="zgo-8s-8VS" id="Lfa-bR-com"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="FaV-qY-Uly" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-1027" y="-3850"/>
+        </scene>
         <!--Detecting Devices-->
         <scene sceneID="IjI-if-s1j">
             <objects>
@@ -49,6 +156,7 @@
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                         <simulatedOrientationMetrics key="simulatedOrientationMetrics" orientation="landscapeRight"/>
                     </view>
+                    <navigationItem key="navigationItem" id="NME-oS-vfp"/>
                     <simulatedOrientationMetrics key="simulatedOrientationMetrics" orientation="landscapeRight"/>
                     <simulatedScreenMetrics key="simulatedDestinationMetrics"/>
                 </viewController>
@@ -59,7 +167,7 @@
         <!--Artists Collection-->
         <scene sceneID="NEs-gT-ySy">
             <objects>
-                <collectionViewController autoresizesArchivedViewToFullSize="NO" id="oBd-p9-9Np" userLabel="Artists Collection" customClass="ArtistCollectionViewController" sceneMemberID="viewController">
+                <collectionViewController storyboardIdentifier="Artists Collection" autoresizesArchivedViewToFullSize="NO" id="oBd-p9-9Np" userLabel="Artists Collection" customClass="ArtistCollectionViewController" sceneMemberID="viewController">
                     <collectionView key="view" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" indicatorStyle="white" minimumZoomScale="0.0" maximumZoomScale="0.0" dataMode="prototypes" id="lIh-Df-2G0">
                         <rect key="frame" x="0.0" y="0.0" width="1024" height="768"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -80,7 +188,7 @@
                                     <rect key="frame" x="0.0" y="0.0" width="220" height="300"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
-                                        <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="top" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Really Long Artist Name Goes Here" textAlignment="center" lineBreakMode="wordWrap" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="wyr-dP-r91" userLabel="Artist">
+                                        <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="top" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Really Long Artist Name Goes Here Then Gets Truncated As It Gets Too Big To Fit In This Label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumFontSize="18" adjustsLetterSpacingToFitWidth="YES" id="wyr-dP-r91" userLabel="Artist">
                                             <rect key="frame" x="10" y="220" width="200" height="70"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="24"/>
@@ -177,7 +285,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="1024" height="768"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <subviews>
-                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="MusicFolderWooden" id="sUM-zG-sHh">
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="MusicFolderWooden" id="sUM-zG-sHh">
                                 <rect key="frame" x="167" y="171" width="370" height="370"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             </imageView>
@@ -304,6 +412,7 @@
                     <navigationItem key="navigationItem" title="Now Playing" id="hRA-v6-TqF"/>
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="_artworkImageView" destination="sUM-zG-sHh" id="RR7-vf-aXv"/>
                         <outlet property="_barSpace1" destination="WPN-DF-2pc" id="sN6-Ky-o6W"/>
                         <outlet property="_barSpace2" destination="eDG-g7-TB6" id="68Y-8h-jYY"/>
                         <outlet property="_barSpace3" destination="bEq-k6-om6" id="Qp5-TZ-fJT"/>
@@ -437,6 +546,7 @@
                     </tabBar>
                     <connections>
                         <segue destination="9he-ZH-Sj8" kind="relationship" relationship="viewControllers" id="dXv-gn-cbl"/>
+                        <segue destination="2r3-ET-ywD" kind="relationship" relationship="viewControllers" id="rGc-IU-HAn"/>
                         <segue destination="jE5-5L-bFA" kind="relationship" relationship="viewControllers" id="R4d-H0-8hS"/>
                     </connections>
                 </tabBarController>
@@ -462,8 +572,50 @@
                                     <action selector="echoPressed:" destination="jE5-5L-bFA" eventType="touchUpInside" id="9gm-xl-3Wc"/>
                                 </connections>
                             </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="CFO-xd-8Ye" userLabel="Get Artist Artwork Button">
+                                <rect key="frame" x="444" y="155" width="112" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Artist Artwork">
+                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <connections>
+                                    <action selector="getArtworkPressed:" destination="jE5-5L-bFA" eventType="touchUpInside" id="fxR-5A-4Jh"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="xqx-fA-2iX" userLabel="Get Album Artwork Button">
+                                <rect key="frame" x="564" y="155" width="112" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Album Artwork">
+                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <connections>
+                                    <action selector="getArtworkPressed:" destination="jE5-5L-bFA" eventType="touchUpInside" id="876-SI-s5v"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="fLg-h1-qya" userLabel="Get All Artwork Button">
+                                <rect key="frame" x="684" y="154" width="112" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="All Artwork">
+                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <connections>
+                                    <action selector="getArtworkPressed:" destination="jE5-5L-bFA" eventType="touchUpInside" id="gNy-4Z-FQb"/>
+                                </connections>
+                            </button>
                             <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="Test Message" borderStyle="roundedRect" minimumFontSize="17" id="WRE-yK-rGy" userLabel="Echo Textfield">
                                 <rect key="frame" x="20" y="90" width="169" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
+                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Artist" minimumFontSize="17" id="6qq-YA-F4O">
+                                <rect key="frame" x="20" y="155" width="169" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
+                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Album" minimumFontSize="17" id="uWG-6B-Ot8">
+                                <rect key="frame" x="216" y="155" width="169" height="30"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits"/>
@@ -475,8 +627,13 @@
                     <tabBarItem key="tabBarItem" title="Debug" image="DebugIcon" id="nbd-C5-9dB"/>
                     <simulatedOrientationMetrics key="simulatedOrientationMetrics" orientation="landscapeRight"/>
                     <connections>
+                        <outlet property="_getAlbumArtworkButton" destination="xqx-fA-2iX" id="7Ze-1p-vCX"/>
+                        <outlet property="_getAllArtworkButton" destination="fLg-h1-qya" id="0AU-hr-J62"/>
+                        <outlet property="_getArtistArtworkButton" destination="CFO-xd-8Ye" id="ScW-1y-H2m"/>
                         <outlet property="echoButton" destination="3Kh-Xp-Vg6" id="g7N-Z9-BUg"/>
                         <outlet property="echoMessageTextField" destination="WRE-yK-rGy" id="3o6-jz-BPQ"/>
+                        <outlet property="getArtworkAlbumTextField" destination="uWG-6B-Ot8" id="8e1-e3-rPo"/>
+                        <outlet property="getArtworkArtistTextField" destination="6qq-YA-F4O" id="zFi-ta-yEj"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="H6K-eJ-NM0" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -485,9 +642,14 @@
         </scene>
     </scenes>
     <resources>
+        <image name="BackButton" width="25" height="25"/>
+        <image name="CancelButton" width="25" height="25"/>
         <image name="DebugIcon" width="25" height="25"/>
+        <image name="ForwardButton" width="25" height="25"/>
         <image name="MusicFolderWooden" width="512" height="512"/>
         <image name="MusicIcon" width="25" height="25"/>
+        <image name="ReloadButton" width="25" height="25"/>
+        <image name="WebTabBar" width="25" height="25"/>
     </resources>
     <color key="tintColor" red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="calibratedRGB"/>
     <simulatedMetricsContainer key="defaultSimulatedMetrics">
