@@ -20,6 +20,7 @@
 #import "CommandClientResponse.h"
 #import "ArtworkGetCommand.h"
 #import "ArtworkGetResponse.h"
+#import "EchoCommand.h"
 
 NSString * kClientControllerNewArtworkNotificationName = @"ClientControllerNewArtworkNotificationName";
 
@@ -134,7 +135,7 @@ static ClientController * _applicationInstance;
         // IP address changing
         // Determine
         NSString * wiFiIpAddress = [self getWiFiIPAddress];
-        NSString * broadcastAddress = [self getBroadcastAddress];
+        //NSString * broadcastAddress = [self getBroadcastAddress];
         if ((!_localIp && wiFiIpAddress) || (_localIp && !wiFiIpAddress) || (wiFiIpAddress && ![_localIp isEqualToString:wiFiIpAddress]))
         {
             NSError *error = nil;
@@ -246,10 +247,15 @@ static ClientController * _applicationInstance;
                 [notificationClient connect];
             }
             
+            // Fire an echo off to everythng to test f we're stll onlne
+            for (CommandClient * commandClient in [_commandClients allValues])
+                if (commandClient.isConnected)
+                    [commandClient sendCommand:[[EchoCommand alloc] initWithMessage:@""] withTarget:nil successSelector:nil failedSelector:nil];
+            
             
             // Get total counts
             int connectedCount = 0;
-            int totalCount = [_carputerDevices count];
+            int totalCount = (int)[_carputerDevices count];
             for (CommandClient * commandClient in [_commandClients allValues])
                 if (commandClient.isConnected)
                     connectedCount++;
@@ -260,7 +266,7 @@ static ClientController * _applicationInstance;
         }
         
         // Wait to re-loop
-        [NSThread sleepForTimeInterval:0.5];
+        [NSThread sleepForTimeInterval:1.0];
     }
 }
 

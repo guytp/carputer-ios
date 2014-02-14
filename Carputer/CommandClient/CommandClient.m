@@ -113,7 +113,7 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
     // Parse parameters to thread
     CommandBase * command = startCommandThreadDefinition.command;
     [[NSThread currentThread] setName:[NSString stringWithFormat:@"Run Command: %@", command]];
-    NSLog(@"Command client %@ queued command %@", _hostname, command);
+    //NSLog(@"Command client %@ queued command %@", _hostname, command);
     id target = startCommandThreadDefinition.target;
     SEL successSelector = startCommandThreadDefinition.successSelector;
     SEL failedSelector = startCommandThreadDefinition.failedSelector;
@@ -123,7 +123,7 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
         // Wait to be connected
         while (!_isConnected)
             [NSThread sleepForTimeInterval:0.1];
-        NSLog(@"Command client %@ executing command %@", _hostname, command);
+        //NSLog(@"Command client %@ executing command %@", _hostname, command);
         
         // Store current thread details
         _currentThread = [NSThread currentThread];
@@ -170,7 +170,7 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
         }
         NSMutableData * readBuffer = [[NSMutableData alloc] init];
         uint8_t buf[1024];
-        unsigned int bytesRead = 0;
+        NSInteger bytesRead = 0;
         int length = 0;
         int totalBytesRead = 0;
         int nextBytesToRead = 4;
@@ -288,14 +288,14 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
     }
     else if ((_isConnected) && ((eventCode == NSStreamEventEndEncountered) || (eventCode == NSStreamEventErrorOccurred)))
     {
-        NSLog(@"Command client %@ is disconnecting due to status %d", _hostname, eventCode);
+        NSLog(@"Command client %@ is disconnecting due to status %lu", _hostname, (unsigned long)eventCode);
         [self disconnect];
     }
     else if ((_isConnecting) && (eventCode == NSStreamEventErrorOccurred))
     {
         [self disconnectWithoutNotification];
         NSError * error = [aStream streamError];
-        NSLog(@"Command client %@ connection failed due to status %d %@", _hostname, eventCode, [error localizedDescription]);
+        NSLog(@"Command client %@ connection failed due to status %lu %@", _hostname, (unsigned long)eventCode, [error localizedDescription]);
         if (self.delegate)
             [self.delegate commandClient:self connectFailedForReason:[error localizedDescription]];
     }
@@ -341,7 +341,7 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
         NSStreamStatus status = (i == 0 ? _commandInputStream : _commandOutputStream).streamStatus;
         if ((status == NSStreamStatusNotOpen) || (status == NSStreamStatusClosed) || (status == NSStreamStatusError))
         {
-            NSLog(@"Command client %@ failed status check due to status %d", _hostname, status);
+            NSLog(@"Command client %@ failed status check due to status %lu", _hostname, (unsigned long)status);
             [self disconnect];
             return;
         }

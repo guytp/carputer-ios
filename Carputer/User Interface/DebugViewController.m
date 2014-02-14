@@ -72,13 +72,13 @@
 - (void)artworkGetSuccess:(CommandClientResponse *)response {
     ArtworkGetResponse * r = response.response;
     if (r.requestedArtist)
-        [self showMessage:[NSString stringWithFormat:@"Artwork Response\r\nArtist Available: %@\r\nArtist Image: %d bytes",
+        [self showMessage:[NSString stringWithFormat:@"Artwork Response\r\nArtist Available: %@\r\nArtist Image: %lu bytes",
                            (!r.artistImageAvailable ? @"Not checked" :
-                            [r.artistImageAvailable boolValue] ? @"Yes" : @"No"), r.artistImageData.length]];
+                            [r.artistImageAvailable boolValue] ? @"Yes" : @"No"), (unsigned long)r.artistImageData.length]];
     if (r.requestedAlbum)
-        [self showMessage:[NSString stringWithFormat:@"Album Response\r\nAlbum Available: %@\r\nAlbum Image: %d bytes",
+        [self showMessage:[NSString stringWithFormat:@"Album Response\r\nAlbum Available: %@\r\nAlbum Image: %lu bytes",
                            (!r.albumImageAvailable ? @"Not checked" :
-                            [r.albumImageAvailable boolValue] ? @"Yes" : @"No"), r.albumImageData.length]];
+                            [r.albumImageAvailable boolValue] ? @"Yes" : @"No"), (unsigned long)r.albumImageData.length]];
 }
 
 - (void)echoSuccess:(CommandClientResponse *)response {

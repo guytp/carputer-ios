@@ -128,7 +128,7 @@ static NSMutableDictionary * _lastNotifications = nil;
         }
         NSMutableData * readBuffer = [[NSMutableData alloc] init];
         uint8_t buf[1024];
-        unsigned int bytesRead = 0;
+        long bytesRead = 0;
         int length = 0;
         ushort opCode = 0;
         ushort notificationCode = 0;
@@ -242,14 +242,14 @@ static NSMutableDictionary * _lastNotifications = nil;
     }
     else if ((_isConnected) && ((eventCode == NSStreamEventEndEncountered) || (eventCode == NSStreamEventErrorOccurred)))
     {
-        NSLog(@"Notification client %@ is disconnecting due to status %d", _hostname, eventCode);
+        NSLog(@"Notification client %@ is disconnecting due to status %lu", _hostname, (unsigned long)eventCode);
         [self disconnect];
     }
     else if ((_isConnecting) && (eventCode == NSStreamEventErrorOccurred))
     {
         [self disconnectWithoutNotification];
         NSError * error = [aStream streamError];
-        NSLog(@"Notification client %@ connection failed due to status %d %@", _hostname, eventCode, [error localizedDescription]);
+        NSLog(@"Notification client %@ connection failed due to status %lu %@", _hostname, (unsigned long)eventCode, [error localizedDescription]);
         if (self.delegate)
             [self.delegate notificationClient:self connectFailedForReason:[error localizedDescription]];
     }
@@ -276,7 +276,7 @@ static NSMutableDictionary * _lastNotifications = nil;
         NSStreamStatus status = (i == 0 ? _inputStream : _outputStream).streamStatus;
         if ((status == NSStreamStatusNotOpen) || (status == NSStreamStatusClosed) || (status == NSStreamStatusError))
         {
-            NSLog(@"Notification client %@ failed status check due to status %d", _hostname, status);
+            NSLog(@"Notification client %@ failed status check due to status %lu", _hostname, (unsigned long)status);
             [self disconnect];
             return;
         }

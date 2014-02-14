@@ -179,7 +179,7 @@
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    [[ClientController applicationInstance] sendAudioCommand:[[PlaylistJumpCommand alloc] initWithPosition:indexPath.row] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
+    [[ClientController applicationInstance] sendAudioCommand:[[PlaylistJumpCommand alloc] initWithPosition:(int)indexPath.row] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
 }
 
 

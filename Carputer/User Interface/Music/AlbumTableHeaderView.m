@@ -21,7 +21,7 @@
     for (AudioFile * audioFile in audioFiles)
         durationTotalSeconds += [audioFile.duration intValue];
     int durationTotalMinutes = durationTotalSeconds / 60;
-    _summaryLabel.text = [NSString stringWithFormat:@"%d songs %d minutes", [audioFiles count], durationTotalMinutes];
+    _summaryLabel.text = [NSString stringWithFormat:@"%lu songs %d minutes", (unsigned long)[audioFiles count], durationTotalMinutes];
     
     // Setup image
     UIImage * image = [[AudioFileFactory applicationInstance] imageForArtist:audioFile.artist album:audioFile.album];
