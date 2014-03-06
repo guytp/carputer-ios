@@ -17,9 +17,15 @@
     NetworkAudioStatusNotification * lastNotification = [NotificationClient lastNotificationOfType:@"NetworkAudioStatusNotification"];
     _parseNotifications = YES;
     [self processNotification:lastNotification];
-    
+}
+
+- (void)viewWillAppear:(BOOL)animated {
     // Hookup to NSNotificationCenter
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(networkNotification:) name:kNotificationClientNotificationName object:nil];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)networkNotification:(NSNotification *) notification {

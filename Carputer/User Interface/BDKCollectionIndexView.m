@@ -84,7 +84,7 @@
     
     self.indexTitles = indexTitles;
     
-    self.alpha = 0.25;
+//    self.alpha = 0.25;
     
     return self;
 }
@@ -104,7 +104,7 @@
     }
     
     self.touchStatusView.frame = CGRectInset(self.bounds, 2, 2);
-    self.touchStatusView.layer.cornerRadius = floorf(self.theDimension / 2.75);
+//    self.touchStatusView.layer.cornerRadius = floorf(self.theDimension / 2.75);
     
     CGFloat cumulativeLength = self.endPadding;
     CGSize labelSize = CGSizeMake(self.theDimension, self.theDimension);
@@ -132,7 +132,7 @@
     if (_touchStatusView) return _touchStatusView;
     _touchStatusView = [[UIView alloc] initWithFrame:CGRectInset(self.bounds, 2, 2)];
     _touchStatusView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0];
-    _touchStatusView.layer.cornerRadius = self.theDimension / 2;
+//    _touchStatusView.layer.cornerRadius = self.theDimension / 2;
     _touchStatusView.layer.masksToBounds = YES;
     return _touchStatusView;
 }
@@ -167,9 +167,9 @@
         label.text = indexTitle;
         label.tag = tag;
         tag = tag + 1;
-        label.font = [UIFont boldSystemFontOfSize:18];
+        label.font = [UIFont boldSystemFontOfSize:32];
         label.backgroundColor = [UIColor clearColor];
-        label.textColor = [UIColor colorWithRed:0.815 green:0.851 blue:0.890 alpha:1.0];
+        label.textColor = [UIColor whiteColor];//colorWithRed:0.815 green:0.851 blue:0.890 alpha:1.0];
         label.textAlignment = NSTextAlignmentCenter;
         [self addSubview:label];
         [workingLabels addObject:label];
@@ -192,7 +192,7 @@
 
 - (void)setBackgroundVisibility:(BOOL)flag {
     CGFloat alpha = flag ? 0.25 : 0;
-    self.alpha = flag ? 1 : 0.25;
+//    self.alpha = flag ? 1 : 0.25;
     self.touchStatusView.backgroundColor = [[UIColor darkGrayColor] colorWithAlphaComponent:alpha];
 }
 

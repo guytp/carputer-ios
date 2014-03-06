@@ -8,6 +8,16 @@
 @synthesize title;
 @synthesize trackNumber;
 @synthesize duration;
+@synthesize device;
+@synthesize lastSeen;
+@synthesize playCount;
+@synthesize isOnline;
+
+// An empty string indicates that we've checked but there is no file, a null
+// value indicates we have not yet checked
+@synthesize artistArtworkFile;
+@synthesize albumArtworkFile;
+
 
 - (id)initWithJsonObject:(NSDictionary *)audioFileDictionary {
     // Call to self
@@ -35,5 +45,28 @@
     
     // Return self
     return self;
+}
+
+
+- (NSString *)primaryKey {
+    return [NSString stringWithFormat:@"%@~%@", self.audioFileId, self.device];
+}
+
+
+- (NSComparisonResult)compareByNumber:(NetworkAudioFile *)otherObject {
+    NSNumber * thisTrackNumber = self.trackNumber;
+    NSNumber * otherTrackNumber = otherObject.trackNumber;
+    NSComparisonResult result;
+    if(!thisTrackNumber && !otherTrackNumber)
+        result = NSOrderedSame;
+    else if (!thisTrackNumber)
+        result = NSOrderedAscending;
+    else if (!otherTrackNumber)
+        result = NSOrderedDescending;
+    else
+        result = [self.trackNumber compare:otherObject.trackNumber];
+    if (result == NSOrderedSame)
+        result = [self.title compare:otherObject.title];
+    return result;
 }
 @end

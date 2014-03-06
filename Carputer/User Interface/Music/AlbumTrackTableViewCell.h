@@ -1,15 +1,15 @@
 #import <UIKit/UIKit.h>
-#import "AudioFile.h"
+#import "NetworkAudioFile.h"
 
 @interface AlbumTrackTableViewCell : UITableViewCell {
     IBOutlet UILabel * _trackNumberLabel;
     IBOutlet UILabel * _titleLabel;
     IBOutlet UILabel * _durationLabel;
     @private
-    AudioFile * _audioFile;
+    NetworkAudioFile * _audioFile;
 }
 
-- (void)setupCellForAudioFile:(AudioFile *)audioFile;
+- (void)setupCellForAudioFile:(NetworkAudioFile *)audioFile;
 
 - (IBAction)queuePressed:(id)sender;
 @end

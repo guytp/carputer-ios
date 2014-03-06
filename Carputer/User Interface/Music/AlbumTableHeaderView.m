@@ -1,5 +1,4 @@
 #import "AlbumTableHeaderView.h"
-#import "AudioFile.h"
 #import "ClientController.h"
 #import "PlaylistQueueCommand.h"
 #import "AppDelegate.h"
@@ -13,12 +12,12 @@
     _album = audioFiles;
     
     // Set album details
-    AudioFile * audioFile = [audioFiles objectAtIndex:0];
+    NetworkAudioFile * audioFile = [audioFiles objectAtIndex:0];
     _albumLabel.text = audioFile.album;
     
     // Determine total duration
     int durationTotalSeconds = 0;
-    for (AudioFile * audioFile in audioFiles)
+    for (NetworkAudioFile * audioFile in audioFiles)
         durationTotalSeconds += [audioFile.duration intValue];
     int durationTotalMinutes = durationTotalSeconds / 60;
     _summaryLabel.text = [NSString stringWithFormat:@"%lu songs %d minutes", (unsigned long)[audioFiles count], durationTotalMinutes];
@@ -34,10 +33,10 @@
 - (IBAction)queuePlayAlbum:(id)sender {
     // Send the command to play/queue the album tracks
     NSMutableArray * audioFileIds = [NSMutableArray arrayWithCapacity:_album.count];
-    for (AudioFile * audioFile in _album)
-        [audioFileIds addObject:audioFile.id];
+    for (NetworkAudioFile * audioFile in _album)
+        [audioFileIds addObject:audioFile.audioFileId];
     PlaylistQueueCommand * command = [[PlaylistQueueCommand alloc] initWithAudioFileIds:audioFileIds replaceCurrentQueue:sender == _playButton];
-    [[ClientController applicationInstance] sendAudioCommand:command withTarget:self successSelector:nil failedSelector:@selector(audioPlaybackFailed)];
+    [[ClientController applicationInstance] sendCommand:command withTarget:self successSelector:nil failedSelector:@selector(audioPlaybackFailed)];
     
     // Now we initiate the segue to now playing if play rather than queue
     if (sender == _queueButton)

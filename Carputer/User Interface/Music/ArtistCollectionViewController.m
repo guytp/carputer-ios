@@ -2,7 +2,6 @@
 #import "ArtistCollectionViewCell.h"
 #import "CollectionSectionHeaderView.h"
 #import "AudioFileFactory.h"
-#import "AudioFile.h"
 #import "NSDictionary+Dictionary_ContainsKey.h"
 #import "AlbumListViewController.h"
 #import "NotificationClient.h"
@@ -18,7 +17,7 @@
 @synthesize indexView = _indexView;
 
 
-- (void)dealloc {
+- (void)viewWillDisappear:(BOOL)animated {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
@@ -26,14 +25,14 @@
 - (void)viewWillAppear:(BOOL)animated {
     // Get a handle to audio data and parse out for displaying in table
     [self updateDataSource];
+    
+    // Hookup to NSNotificationCenter
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(networkNotification:) name:kNotificationClientNotificationName object:nil];
 }
 
 - (void)viewDidLoad {
     // Add index view
     [self.view addSubview:self.indexView];
-
-    // Hookup to NSNotificationCenter
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(networkNotification:) name:kNotificationClientNotificationName object:nil];
 }
 
 - (void)networkNotification:(NSNotification *) notification {
@@ -58,13 +57,13 @@
     else
         [_dataSource removeAllObjects];
     
-    NSArray * audioFiles = [[AudioFileFactory applicationInstance] readAllActive];
+    NSArray * artistNames = [[AudioFileFactory applicationInstance] availableArtists];
     NSString * lastLetter;
     NSMutableArray * indexSections = [NSMutableArray array];
-    for (AudioFile * audioFile in audioFiles)
+    for (NSString * artist in artistNames)
     {
         // Determine first letter and if this is not in the dictionary hash add it now
-        NSString * artistFirstLetter = [[audioFile.artist substringToIndex:1] uppercaseString];
+        NSString * artistFirstLetter = [[artist substringToIndex:1] uppercaseString];
         NSMutableArray * letterArray = nil;
         if (![lastLetter isEqualToString:artistFirstLetter])
         {
@@ -77,8 +76,7 @@
         lastLetter = artistFirstLetter;
         
         // Check if this artist is already contained, if not add them now
-        if (![[[letterArray lastObject] uppercaseString] isEqualToString:[audioFile.artist uppercaseString]])
-            [letterArray addObject:audioFile.artist];
+        [letterArray addObject:artist];
     }
     self.indexView.indexTitles = indexSections;
     
@@ -132,9 +130,9 @@
 - (BDKCollectionIndexView *)indexView {
     if (_indexView) return _indexView;
     CGRect frame = CGRectMake(CGRectGetWidth(self.collectionView.frame) - 28,
-                              CGRectGetMinY(self.collectionView.frame) + 67,
+                              CGRectGetMinY(self.collectionView.frame) + 62,
                               28,
-                              CGRectGetHeight(self.collectionView.frame) - 124);
+                              CGRectGetHeight(self.collectionView.frame) - 115);
     _indexView = [BDKCollectionIndexView indexViewWithFrame:frame indexTitles:@[]];
     _indexView.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleLeftMargin);
     [_indexView addTarget:self action:@selector(indexViewValueChanged:) forControlEvents:UIControlEventValueChanged];

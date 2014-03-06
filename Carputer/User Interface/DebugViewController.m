@@ -13,23 +13,12 @@
 
 - (IBAction)echoPressed:(id)sender {
     ClientController * clientController = [ClientController applicationInstance];
-    if (!clientController.hasConnectedClients)
-    {
-        [self showMessage:@"No clients connected"];
-        return;
-    }
-    
     EchoCommand * echoCommand = [[EchoCommand alloc] initWithMessage:echoMessageTextField.text];
     [clientController sendCommand:echoCommand withTarget:self successSelector:@selector(echoSuccess:) failedSelector:@selector(echoFailed:)];
 }
 
 - (IBAction)getArtworkPressed:(id)sender {
     ClientController * clientController = [ClientController applicationInstance];
-    if (!clientController.hasConnectedClients)
-    {
-        [self showMessage:@"No clients connected"];
-        return;
-    }
     
     // Error check
     BOOL getArtist = sender == _getArtistArtworkButton || sender == _getAllArtworkButton;

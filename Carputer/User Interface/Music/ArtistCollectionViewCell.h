@@ -5,6 +5,7 @@
     IBOutlet UILabel * _label;
     @private
     BOOL _registeredNotifications;
+    UIColor * _randomColour;
 }
 
 @property (strong, readonly) NSString * label;

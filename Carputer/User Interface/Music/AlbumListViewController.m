@@ -1,5 +1,4 @@
 #import "AlbumListViewController.h"
-#import "AudioFile.h"
 #import "AudioFileFactory.h"
 #import "AlbumTrackTableViewCell.h"
 #import "AlbumTableHeaderView.h"
@@ -10,16 +9,23 @@
 #import "NetworkAudioLibraryUpdateNotification.h"
 #import "NetworkAudioFile.h"
 
-@implementation AlbumListViewController 
-- (void)viewDidLoad {
+@implementation AlbumListViewController
+
+
+- (void)viewWillAppear:(BOOL)animated {
     // Hookup to NSNotificationCenter
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(networkNotification:) name:kNotificationClientNotificationName object:nil];
 }
 
-- (void)dealloc {
+- (void)viewWillDisappear:(BOOL)animated {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+- (void)viewDidLoad {
+    self.tableView.sectionIndexColor = [UIColor whiteColor];
+    self.tableView.sectionIndexTrackingBackgroundColor = [[UIColor darkGrayColor] colorWithAlphaComponent:0.25];
+    self.tableView.sectionIndexBackgroundColor = [UIColor clearColor];
+}
 
 - (void)networkNotification:(NSNotification *) notification {
     // Return if its a notification we don't care about
@@ -50,14 +56,14 @@
                 break;
             }
     if (!foundSameArtist)
-        for (AudioFile * audioFile in audioLibraryNotification.deletedFiles)
+        for (NetworkAudioFile * audioFile in audioLibraryNotification.deletedFiles)
             if ([[audioFile.artist lowercaseString] isEqualToString:[_artist lowercaseString]])
             {
                 foundSameArtist = YES;
                 break;
             }
     if (!foundSameArtist)
-        for (AudioFile * audioFile in audioLibraryNotification.offlineFiles)
+        for (NetworkAudioFile * audioFile in audioLibraryNotification.offlineFiles)
             if ([[audioFile.artist lowercaseString] isEqualToString:[_artist lowercaseString]])
             {
                 foundSameArtist = YES;
@@ -65,7 +71,8 @@
             }
     
     // We trigger data re-binding now
-    [self setArtist:_artist];
+    if (foundSameArtist)
+        [self setArtist:_artist];
 }
 
 - (void)setArtist:(NSString *)artist
@@ -76,37 +83,18 @@
         [self performSelectorOnMainThread:@selector(setArtist:) withObject:artist waitUntilDone:NO];
         return;
     }
-
+    
     self.tableView.backgroundColor = [UIColor blackColor];
-
-    @synchronized (_dataSource)
-    {
-        // Store artist
-        _artist = artist;
-        
-        // Set the title of the navigation bar
-        self.navigationItem.title = artist;
-        
-        // Get list of albums and separate into an array of arrays with each array
-        // being a single album
-        _dataSource = [NSMutableArray array];
-        NSArray * audioFiles = [[AudioFileFactory applicationInstance] readAllActiveForArtist:artist];
-        NSString * lastAlbum;
-        NSMutableArray * thisAlbumTracks;
-        for (AudioFile * audioFile in audioFiles)
-        {
-            // On album change add a new entry
-            if (![audioFile.album isEqualToString:lastAlbum])
-            {
-                lastAlbum = audioFile.album;
-                thisAlbumTracks = [NSMutableArray array];
-                [_dataSource addObject:thisAlbumTracks];
-            }
-            
-            // Add the item to this album
-            [thisAlbumTracks addObject:audioFile];
-        }
-    }
+    
+    
+    // Store artist
+    _artist = artist;
+    
+    // Set the title of the navigation bar
+    self.navigationItem.title = artist;
+    
+    // Update our data source
+    _dataSource = [[AudioFileFactory applicationInstance] availableAlbumsForArtist:artist];
     
     // Tell the table to reload
     self.tableView.allowsSelection = YES;
@@ -115,15 +103,12 @@
 
 - (NSString *)artist
 {
-    @synchronized (_dataSource)
-    {
-        return _artist;
-    }
+    return _artist;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     AlbumTrackTableViewCell * cell = [tableView dequeueReusableCellWithIdentifier:@"AlbumListTrackCellView" forIndexPath:indexPath];
-    AudioFile * audioFile = ((AudioFile *)[[_dataSource objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]);
+    NetworkAudioFile * audioFile = ((NetworkAudioFile *)[[_dataSource objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]);
     [cell setupCellForAudioFile:audioFile];
     return cell;
 }
@@ -139,7 +124,7 @@
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section
 {
-    return ((AudioFile *)[[_dataSource objectAtIndex:section] objectAtIndex:0]).album;
+    return ((NetworkAudioFile *)[[_dataSource objectAtIndex:section] objectAtIndex:0]).album;
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
@@ -162,9 +147,9 @@
 - (NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     // Determine the audio file for this item and play it wiping existing queue
-    AudioFile * audioFile = [[_dataSource objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
-    PlaylistQueueCommand * command = [[PlaylistQueueCommand alloc] initWithAudioFileIds:[NSArray arrayWithObject:audioFile.id] replaceCurrentQueue:YES];
-    [[ClientController applicationInstance] sendAudioCommand:command withTarget:self successSelector:nil failedSelector:@selector(audioPlaybackFailed)];
+    NetworkAudioFile * audioFile = [[_dataSource objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+    PlaylistQueueCommand * command = [[PlaylistQueueCommand alloc] initWithAudioFileIds:[NSArray arrayWithObject:audioFile.audioFileId] replaceCurrentQueue:YES];
+    [[ClientController applicationInstance] sendCommand:command withTarget:self successSelector:nil failedSelector:@selector(audioPlaybackFailed)];
     return indexPath;
 }
 
@@ -178,5 +163,15 @@
     UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
     UIViewController * viewController = [storyBoard instantiateViewControllerWithIdentifier:isMusicPlaying ? @"Now Playing" : @"Nothing Playing"];
     [self.navigationController pushViewController:viewController animated:YES];
+}
+
+- (NSArray *)sectionIndexTitlesForTableView:(UITableView *)tableView {
+    NSMutableArray * indexTitles = [NSMutableArray array];
+    for (NSArray * album in _dataSource)
+    {
+        NSString * albumLetter = [((NetworkAudioFile *)[album objectAtIndex:0]).album substringToIndex:1];
+        [indexTitles addObject:[albumLetter uppercaseString]];
+    }
+    return indexTitles;
 }
 @end

@@ -13,7 +13,7 @@
         return [NSString stringWithFormat:@"%02d:%02d", durationMinutes, durationSeconds];
 }
 
-- (void)setupForAudioFile:(AudioFile *)audioFile isPlaying:(BOOL)isPlaying {
+- (void)setupForAudioFile:(NetworkAudioFile *)audioFile isPlaying:(BOOL)isPlaying {
     self.backgroundColor = isPlaying ? [UIColor blackColor] : [UIColor clearColor];
     self.selectionStyle = UITableViewCellSelectionStyleNone;
     _audioFile = audioFile;

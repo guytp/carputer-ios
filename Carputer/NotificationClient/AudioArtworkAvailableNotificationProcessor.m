@@ -1,5 +1,4 @@
 #import "AudioArtworkAvailableNotificationProcessor.h"
-#import "AudioFile.h"
 #import "AudioFileFactory.h"
 #import "NetworkAudioArtworkAvailableNotification.h"
 
@@ -51,22 +50,11 @@
     // Store file on disk unless empty
     if (imageData)
     {
-        // Get path data
-        NSArray * paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-        NSString * artworkDirectory = [[paths lastObject] stringByAppendingPathComponent:@"artwork"];
-        NSFileManager * fileManager = [NSFileManager defaultManager];
-        BOOL isDir = YES;
-        BOOL isDirExists = [fileManager fileExistsAtPath:artworkDirectory isDirectory:&isDir];
-        if (!isDirExists) [fileManager createDirectoryAtPath:artworkDirectory withIntermediateDirectories:YES attributes:nil error:nil];
-        NSString * uuid = [[NSUUID UUID] UUIDString];
-        NSString *filename = [artworkDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png", uuid]];
-        [imageData writeToFile:filename atomically:NO];
-    
         // Merge these changes in the database
         if (!album)
-            [[AudioFileFactory applicationInstance] setArtworkForArtist:artist withFile:filename];
+            [[AudioFileFactory applicationInstance] setArtworkForArtist:artist data:imageData];
         else
-            [[AudioFileFactory applicationInstance] setArtworkForArtist:artist album:album withFile:filename];
+            [[AudioFileFactory applicationInstance] setArtworkForArtist:artist album:album data:imageData];
     }
     else
         return nil;

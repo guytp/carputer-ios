@@ -4,8 +4,7 @@
 #import "ClientController.h"
 #import "PauseToggleCommand.h"
 #import "PlaylistJumpCommand.h"
-#import "AudioFile.h"
-#import "AudioFileFactory.h"
+#import "NetworkAudioFile.h"
 #import "PlaylistTableViewCell.h"
 #import "TrackJumpCommand.h"
 #import "PlaylistNextCommand.h"
@@ -20,12 +19,18 @@
 @end
 
 @implementation NowPlayingViewController
-- (void)dealloc {
+- (void)viewWillDisappear:(BOOL)animated {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     _hasDisplayed = YES;
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+
+    // Hookup to NSNotificationCenter
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(networkNotification:) name:kNotificationClientNotificationName object:nil];
 }
 
 - (void)viewDidLoad {
@@ -36,9 +41,6 @@
     NetworkAudioStatusNotification * lastNotification = [NotificationClient lastNotificationOfType:@"NetworkAudioStatusNotification"];
     _parseNotifications = YES;
     [self processNotification:lastNotification];
-    
-    // Hookup to NSNotificationCenter
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(networkNotification:) name:kNotificationClientNotificationName object:nil];
     
     // Setup some defaults
     _isScrubDown = NO;
@@ -71,9 +73,9 @@
         bool didntFind = false;
         for (int i = 0; i < [status.playlist count]; i++)
         {
-            AudioFile * af1 = [status.playlist objectAtIndex:i];
-            AudioFile * af2 = [_playlist objectAtIndex:i];
-            if ([af1.id intValue] != [af2.id intValue])
+            NetworkAudioFile * af1 = [status.playlist objectAtIndex:i];
+            NetworkAudioFile * af2 = [_playlist objectAtIndex:i];
+            if ([af1.audioFileId intValue] != [af2.audioFileId intValue])
             {
                 didntFind = true;
                 break;
@@ -112,10 +114,10 @@
     
 
     // Update the view for current track
-    AudioFile * thisTrack = nil;
+    NetworkAudioFile * thisTrack = nil;
     if ((status.playlist) && ([status.playlist count] >= status.playlistPosition + 1))
         thisTrack = [status.playlist objectAtIndex:status.playlistPosition];
-    if ((thisTrack) && ([_audioTrack.id intValue] != [thisTrack.id intValue]))
+    if ((thisTrack) && ([_audioTrack.audioFileId intValue] != [thisTrack.audioFileId intValue]))
     {
         _currentTrack = status.playlistPosition;
         _audioTrack = thisTrack;
@@ -179,12 +181,12 @@
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    [[ClientController applicationInstance] sendAudioCommand:[[PlaylistJumpCommand alloc] initWithPosition:(int)indexPath.row] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
+    [[ClientController applicationInstance] sendCommand:[[PlaylistJumpCommand alloc] initWithPosition:(int)indexPath.row] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
 }
 
 
 - (IBAction)playPauseToggle:(id)sender {
-    [[ClientController applicationInstance] sendAudioCommand:[[PauseToggleCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
+    [[ClientController applicationInstance] sendCommand:[[PauseToggleCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
 }
 
 - (void)actionFailed:(NSError *)error {
@@ -194,12 +196,12 @@
 
 - (IBAction)movePrevious:(id)sender
 {
-    [[ClientController applicationInstance] sendAudioCommand:[[PlaylistPreviousCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
+    [[ClientController applicationInstance] sendCommand:[[PlaylistPreviousCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
 }
 
 - (IBAction)moveNext:(id)sender
 {
-    [[ClientController applicationInstance] sendAudioCommand:[[PlaylistNextCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
+    [[ClientController applicationInstance] sendCommand:[[PlaylistNextCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
 }
 
 - (IBAction)scrubTouchDown:(id)sender {
@@ -218,7 +220,7 @@
     if ([_lastDragSlider timeIntervalSinceNow] > -0.25)
         return;
     _lastDragSlider = [NSDate date];
-    [[ClientController applicationInstance] sendAudioCommand:[[TrackJumpCommand alloc] initWithOffset:duration] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
+    [[ClientController applicationInstance] sendCommand:[[TrackJumpCommand alloc] initWithOffset:duration] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
 }
 
 - (IBAction)scrubTouchUpOutside:(id)sender {
@@ -226,10 +228,10 @@
 }
 
 - (IBAction)toggleShuffle:(id)sender {
-    [[ClientController applicationInstance] sendAudioCommand:[[ToggleShuffleCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
+    [[ClientController applicationInstance] sendCommand:[[ToggleShuffleCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
 }
 
 - (IBAction)toggleRepeat:(id)sender {
-    [[ClientController applicationInstance] sendAudioCommand:[[ToggleRepeatCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
+    [[ClientController applicationInstance] sendCommand:[[ToggleRepeatCommand alloc] init] withTarget:self successSelector:nil failedSelector:@selector(actionFailed:)];
 }
 @end

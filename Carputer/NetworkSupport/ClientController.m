@@ -13,7 +13,7 @@
 #import "NSDictionary+Dictionary_ContainsKey.h"
 #import "CarputerDevice.h"
 #import "CommandClient.h"
-#import "AudioFile.h"
+#import "NetworkAudioFile.h"
 #import "AudioLibraryGetCommand.h"
 #import "AudioFileFactory.h"
 #import "NotificationClient.h"
@@ -71,199 +71,150 @@ static ClientController * _applicationInstance;
     return _applicationInstance;
 }
 
-- (void)udpSocket:(GCDAsyncUdpSocket *)sock didReceiveData:(NSData *)data fromAddress:(NSData *)address withFilterContext:(id)filterContext {
-    // Attempt to parse JSON object from discovery packet
-    NSError * error;
-    NSDictionary * jsonObject = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&error];
-    if (error)
+- (void)disconnectAllClients {
+    @synchronized (_carputerDevices)
     {
-        NSLog(@"Failed to parse discovery packet: %@", error);
-        return;
-    }
-    if (![[jsonObject class] isSubclassOfClass:[NSDictionary class]])
-    {
-        NSLog(@"Json object is not a dictionary");
-        return;
-    }
-    
-    // Attempt to read values from discovery packet
-    bool audioSupport = false;
-    NSString * hostname = nil;
-    ushort notificationPort = 0;
-    ushort commandPort = 0;
-    if ([jsonObject containsKey:@"AudioSupport"])
-        audioSupport = [(NSNumber *) [jsonObject valueForKey:@"AudioSupport"] boolValue];
-    if ([jsonObject containsKey:@"Hostname"])
-        hostname = [jsonObject valueForKey:@"Hostname"];
-    if ([jsonObject containsKey:@"NotificationPort"])
-        notificationPort = (ushort)[(NSNumber *) [jsonObject valueForKey:@"NotificationPort"] intValue];
-    if ([jsonObject containsKey:@"CommandPort"])
-        commandPort = (ushort)[(NSNumber *) [jsonObject valueForKey:@"CommandPort"] intValue];
-    NSString * serialNumber = [jsonObject valueForKey:@"SerialNumber"];
-    
-    // If core values are missing return
-    if ((!hostname) || (notificationPort < 1) || (commandPort < 1))
-    {
-        NSLog(@"Discovery packet missing core information, discarding");
-        return;
-    }
-    NSString * ipAddress = [GCDAsyncUdpSocket hostFromAddress:address];
-    
-    // Check if we have this server already, if not then add a new server to the list, otherwise
-    // update its last seen time
-    if ([_carputerDevices containsKey:serialNumber])
-    {
-        CarputerDevice * device = [_carputerDevices valueForKey:serialNumber];
-        device.lastUpdated = [NSDate date];
-    }
-    else
-    {
-        CarputerDevice * device = [[CarputerDevice alloc] initWithIpAddress:ipAddress hostname:hostname commandPort:commandPort notificationPort:notificationPort audioSupport:audioSupport serialNumber:serialNumber];
-        @synchronized (_carputerDevices)
+        for (CommandClient * commandClient in [_commandClients allValues])
         {
-            [_carputerDevices setObject:device forKey:serialNumber];
+            [[AudioFileFactory applicationInstance] setDeviceOffline:commandClient.serialNumber];
+            if (commandClient.isConnected)
+                [commandClient disconnect];
         }
-        NSLog(@"%@ discovered and added to our list", serialNumber);
+        for (NotificationClient * notificationClient in [_notificationClients allValues])
+            if (notificationClient.isConnected)
+                [notificationClient disconnect];
+        
+        [_commandClients removeAllObjects];
+        [_notificationClients removeAllObjects];
+        NSUInteger count = [_carputerDevices count];
+        [_carputerDevices removeAllObjects];
+        NSLog(@"Removed %lu clients", (unsigned long)count);
     }
 }
 
 - (void)statusCheckThread {
     [[NSThread currentThread] setName:@"Client Controller Status Check"];
+    BOOL firstLoop = YES;
     while (![NSThread currentThread].isCancelled)
     {
-        // Detect whether or not we need to re-bind to the discovery.  This is defined by the local WiFi
-        // IP address changing
-        // Determine
+        // Detect whether or not we need to re-bind to the discovery.  This is defined by the local WiFi IP address changing
         NSString * wiFiIpAddress = [self getWiFiIPAddress];
+        if (firstLoop)
+        {
+            firstLoop = NO;
+            if (!wiFiIpAddress)
+                NSLog(@"Carputer start up but not connected to a network");
+        }
         //NSString * broadcastAddress = [self getBroadcastAddress];
         if ((!_localIp && wiFiIpAddress) || (_localIp && !wiFiIpAddress) || (wiFiIpAddress && ![_localIp isEqualToString:wiFiIpAddress]))
         {
-            NSError *error = nil;
-            
-            // If socket already exists kill it, otherwise re-create
-            NSLog(@"WiFi status change");
-            if (_udpSocket)
-            {
-                [_udpSocket close];
-                _udpSocket = nil;
-            }
+            [self disconnectAllClients];
+            _localIp = wiFiIpAddress;
             if (!wiFiIpAddress)
-            {
-                NSLog(@"Disconnected from WiFi, terminating discovery");
-                _localIp = nil;
-            }
+                NSLog(@"Disconnected from WiFi");
+            else if (![wiFiIpAddress hasPrefix:@"192.168.42."] && ![wiFiIpAddress hasPrefix:@"192.168.43."])
+                NSLog(@"Connected to WiFi but not on an appropriate subnet");
             else
             {
-                NSLog(@"Connected to WiFi, starting discovery");
-                _udpSocket = [[GCDAsyncUdpSocket alloc] initWithDelegate:self delegateQueue:dispatch_get_main_queue()];
-                
-                if (![_udpSocket bindToPort:4200 error:&error])
-                    NSLog(@"Error binding to discovery port: %@", error);
-                else
+                NSLog(@"Connected to WiFi, registering clienxt");
+                CarputerDevice * device = [[CarputerDevice alloc] initWithIpAddress:[wiFiIpAddress hasPrefix:@"192.168.42."] ? @"192.168.42.1" : @"192.168.43.3" commandPort:4200 notificationPort:4201];
+                @synchronized (_carputerDevices)
                 {
-                    if (![_udpSocket beginReceiving:&error])
-                        NSLog(@"Error starting receiving from multicast discovery: %@", error);
-                    else
-                    {
-                        NSLog(@"Multicast discovery started");
-                        _localIp = wiFiIpAddress;
-                    }
+                    [_carputerDevices setObject:device forKey:device.ipAddress];
                 }
+                NSLog(@"Added client for %@", device.ipAddress);
             }
         }
-    
         
-        // Remove any timed out devices
+        // Reconnect any disconnected command clients
+        NSArray * allKeys;
         @synchronized (_carputerDevices)
         {
-            NSArray * allKeys = [_carputerDevices allKeys];
-            for (NSString * key in allKeys)
-            {
-                // Ignore if we've seen it recently via broadcast or data receipt
-                CarputerDevice * device = [_carputerDevices valueForKey:key];
-                NotificationClient * notificationClient = [_notificationClients valueForKey:key];
-                CommandClient * commandClient = [_commandClients valueForKey:key];
-                if (([device.lastUpdated timeIntervalSinceNow] > -10) && ([notificationClient.lastDataReceived timeIntervalSinceNow] > -10) && ([commandClient.lastDataReceived timeIntervalSinceNow] > -10))
-                    continue;
-                
-                // Set all of the audio files offline for this device
-                [[AudioFileFactory applicationInstance] setDeviceOffline:commandClient.serialNumber];
-                
-                // Disconnect if required
-                if ((commandClient) && (commandClient.isConnected))
-                    [commandClient disconnect];
-                if ((notificationClient) && (notificationClient.isConnected))
-                    [notificationClient disconnect];
-                
-                // Remove from list
-                NSLog(@"%@:%@:%d:%d has timed out, removing from our known devices", device.ipAddress, device.hostname, device.commandPort, device.notificationPort);
-                [_carputerDevices removeObjectForKey:key];
-                [_notificationClients removeObjectForKey:key];
-                [_commandClients removeObjectForKey:key];
-                
-            }
-            
-            // Reconnect any disconnected command clients
             allKeys = [_carputerDevices allKeys];
-            for (NSString * key in allKeys)
-            {
-                // Ignore if we're connected
-                CommandClient * commandClient = [_commandClients valueForKey:key];
-                if ((commandClient.isConnected) || (commandClient.isConnecting))
-                    continue;
-                
-                // Request a reconnection if client exists, otherwise create a new client
-                CarputerDevice * device = [_carputerDevices valueForKey:key];
-                if (commandClient)
-                    NSLog(@"%@:%@:%d:%d has disconnected, reconnecting", device.ipAddress, device.hostname, device.commandPort, device.notificationPort);
-                else
-                {
-                    commandClient = [[CommandClient alloc] initWithHostname:device.ipAddress port:device.commandPort serialNumber:device.serialNumber];
-                    commandClient.delegate = self;
-                    [_commandClients setObject:commandClient forKey:key];
-                    NSLog(@"%@:%@:%d:%d is new, connecting", device.ipAddress, device.hostname, device.commandPort, device.notificationPort);
-                }
-                [commandClient connect];
-            }
-            // Reconnect any disconnected notification clients
-            for (NSString * key in allKeys)
-            {
-                // Ignore if we're connected
-                NotificationClient * notificationClient = [_notificationClients valueForKey:key];
-                if ((notificationClient.isConnected) || (notificationClient.isConnecting))
-                    continue;
-                
-                // Request a reconnection if client exists, otherwise create a new client
-                CarputerDevice * device = [_carputerDevices valueForKey:key];
-                if (notificationClient)
-                    NSLog(@"%@:%@:%d:%d (notification) has disconnected, reconnecting", device.ipAddress, device.hostname, device.commandPort, device.notificationPort);
-                else
-                {
-                    notificationClient = [[NotificationClient alloc] initWithHostname:device.ipAddress port:device.notificationPort serialNumber:device.serialNumber];
-                    notificationClient.delegate = self;
-                    [_notificationClients setObject:notificationClient forKey:key];
-                    NSLog(@"%@:%@:%d:%d (notification) is new, connecting", device.ipAddress, device.hostname, device.commandPort, device.notificationPort);
-                }
-                [notificationClient connect];
-            }
-            
-            // Fire an echo off to everythng to test f we're stll onlne
-            for (CommandClient * commandClient in [_commandClients allValues])
-                if (commandClient.isConnected)
-                    [commandClient sendCommand:[[EchoCommand alloc] initWithMessage:@""] withTarget:nil successSelector:nil failedSelector:nil];
-            
-            
-            // Get total counts
-            int connectedCount = 0;
-            int totalCount = (int)[_carputerDevices count];
-            for (CommandClient * commandClient in [_commandClients allValues])
-                if (commandClient.isConnected)
-                    connectedCount++;
-            if ((self.delegate) && ((connectedCount != _lastConnectedCount) || (totalCount != _lastTotalCount)))
-                [self.delegate clientController:self totalClients:totalCount connectedClients:connectedCount];
-            _lastConnectedCount = connectedCount;
-            _lastTotalCount = totalCount;
         }
+        for (NSString * key in allKeys)
+        {
+            // Ignore if we're connected
+            CommandClient * commandClient = [_commandClients valueForKey:key];
+            if ((commandClient.isConnected) || (commandClient.isConnecting))
+                continue;
+            
+            // Request a reconnection if client exists, otherwise create a new client
+            CarputerDevice * device;
+            @synchronized (_carputerDevices)
+            {
+                device = [_carputerDevices valueForKey:key];
+            }
+            if (commandClient)
+                NSLog(@"%@:%d:%d has disconnected, reconnecting", device.ipAddress, device.commandPort, device.notificationPort);
+            else
+            {
+                commandClient = [[CommandClient alloc] initWithHostname:device.ipAddress port:device.commandPort serialNumber:device.serialNumber];
+                commandClient.delegate = self;
+                @synchronized (_carputerDevices)
+                {
+                    [_commandClients setObject:commandClient forKey:key];
+                }
+                NSLog(@"%@:%d:%d is new, connecting", device.ipAddress, device.commandPort, device.notificationPort);
+            }
+            [commandClient connect];
+        }
+        // Reconnect any disconnected notification clients
+        for (NSString * key in allKeys)
+        {
+            // Ignore if we're connected
+            NotificationClient * notificationClient;
+            @synchronized (_carputerDevices)
+            {
+                notificationClient = [_notificationClients valueForKey:key];
+            }
+            BOOL isTimedOut = [[NSDate date] timeIntervalSinceDate:notificationClient.lastDataReceived] > 3;
+            if ((isTimedOut) || ((notificationClient.isConnected) || (notificationClient.isConnecting)))
+                continue;
+            
+            // Disconnect if already connected
+            if ((notificationClient.isConnected) || (notificationClient.isConnecting))
+                [notificationClient disconnect];
+            
+            // Request a reconnection if client exists, otherwise create a new client
+            CarputerDevice * device = [_carputerDevices valueForKey:key];
+            if (notificationClient)
+                NSLog(@"%@:%d:%d (notification) has disconnected, reconnecting", device.ipAddress, device.commandPort, device.notificationPort);
+            else
+            {
+                notificationClient = [[NotificationClient alloc] initWithHostname:device.ipAddress port:device.notificationPort serialNumber:device.serialNumber];
+                notificationClient.delegate = self;
+                @synchronized (_carputerDevices)
+                {
+                    [_notificationClients setObject:notificationClient forKey:key];
+                }
+                NSLog(@"%@:%d:%d (notification) is new, connecting", device.ipAddress, device.commandPort, device.notificationPort);
+            }
+            [notificationClient connect];
+        }
+        
+        // Fire an echo off to everythng to test f we're stll onlne
+        NSArray * allCommandClients;
+        int totalCount;
+        @synchronized (_carputerDevices)
+        {
+            allCommandClients = [_commandClients allValues];
+            totalCount = (int)[_carputerDevices count];
+        }
+        for (CommandClient * commandClient in allCommandClients)
+            if (commandClient.isConnected)
+                [commandClient sendCommand:[[EchoCommand alloc] initWithMessage:@""] withTarget:nil successSelector:nil failedSelector:nil];
+        
+        
+        // Get total counts
+        int connectedCount = 0;
+        for (CommandClient * commandClient in allCommandClients)
+            if (commandClient.isConnected)
+                connectedCount++;
+        if ((self.delegate) && ((connectedCount != _lastConnectedCount) || (totalCount != _lastTotalCount)))
+            [self.delegate clientController:self totalClients:totalCount connectedClients:connectedCount];
+        _lastConnectedCount = connectedCount;
+        _lastTotalCount = totalCount;
         
         // Wait to re-loop
         [NSThread sleepForTimeInterval:1.0];
@@ -274,12 +225,14 @@ static ClientController * _applicationInstance;
 - (void)sendCommand:(CommandBase *) command withTarget:(id)target successSelector:(SEL)successSelector failedSelector:(SEL)failedSelector {
     // Try to find suitable clients
     NSMutableArray * connectedClients = [[NSMutableArray alloc] init];
+    NSArray * commandClients;
     @synchronized (_carputerDevices)
     {
-        for (CommandClient * client in [_commandClients allValues])
-            if (client.isConnected)
-                [connectedClients addObject:client];
+        commandClients = [_commandClients allValues];
     }
+    for (CommandClient * client in commandClients)
+        if (client.isConnected)
+            [connectedClients addObject:client];
     
     // Call failure if no clients found
     if ([connectedClients count] < 1)
@@ -293,47 +246,6 @@ static ClientController * _applicationInstance;
     // Call each client with the command
     for (CommandClient * client in connectedClients)
         [client sendCommand:command withTarget:target successSelector:successSelector failedSelector:failedSelector];
-}
-
-
-- (void)sendAudioCommand:(CommandBase *) command withTarget:(id)target successSelector:(SEL)successSelector failedSelector:(SEL)failedSelector {
-    // Try to find suitable clients
-    NSMutableArray * connectedClients = [[NSMutableArray alloc] init];
-    @synchronized (_carputerDevices)
-    {
-        for (NSString * key in [_commandClients allKeys])
-        {
-            CommandClient * client = [_commandClients valueForKey:key];
-            CarputerDevice * device = [_carputerDevices valueForKey:key];
-            if ((device.audioSupport) && (client.isConnected))
-                [connectedClients addObject:client];
-        }
-    }
-    
-    // Call failure if no clients found
-    if ([connectedClients count] < 1)
-    {
-        NSError * error = [[NSError alloc] initWithDomain:kCommandClientErrorDomain code:CommandClientErrorNotConnected userInfo:nil];
-        if (!failedSelector)
-            [target performSelectorOnMainThread:failedSelector withObject:error waitUntilDone:NO];
-        return;
-    }
-    
-    // Call each client with the command
-    for (CommandClient * client in connectedClients)
-        [client sendCommand:command withTarget:target successSelector:successSelector failedSelector:failedSelector];
-    
-}
-
-- (BOOL)hasConnectedClients
-{
-    @synchronized (_carputerDevices)
-    {
-        for (CommandClient * client in [_commandClients allValues])
-            if (client.isConnected)
-                return YES;
-    }
-    return NO;
 }
 
 
@@ -351,10 +263,7 @@ static ClientController * _applicationInstance;
         return;
     
     // If this is an audio client start it probing for audio messages
-    if (device.audioSupport)
-    {
-        [client sendCommand:[[AudioLibrarGetCommand alloc] init] withTarget:self successSelector:@selector(audioLibraryGetSuccess:) failedSelector:@selector(audioLibraryGetFail:)];
-    }
+    [client sendCommand:[[AudioLibrarGetCommand alloc] init] withTarget:self successSelector:@selector(audioLibraryGetSuccess:) failedSelector:@selector(audioLibraryGetFail:)];
 }
 
 - (void)commandClient:(CommandClient *)client connectFailedForReason:(NSString *)reason
@@ -379,7 +288,9 @@ static ClientController * _applicationInstance;
 }
 - (void)audioLibraryGetSuccess:(CommandClientResponse *)response {
     NSArray * audioFiles = response.response;
-    [[AudioFileFactory applicationInstance] mergeChangesForDevice:response.client.serialNumber withAudioFiles:audioFiles];
+    for (NetworkAudioFile * file in audioFiles)
+        file.device = response.client.serialNumber;
+    [[AudioFileFactory applicationInstance] mergeChangesForAudioFiles:audioFiles];
 }
 
 - (void)audioLibraryGetFail:(NSArray *)response {
@@ -394,6 +305,9 @@ static ClientController * _applicationInstance;
     struct ifaddrs * addrs;
     const struct ifaddrs * cursor;
     
+    NSString * devIp = nil;
+    NSString * prodIp = nil;
+    
     success = getifaddrs(&addrs) == 0;
     if (success) {
         cursor = addrs;
@@ -401,16 +315,18 @@ static ClientController * _applicationInstance;
             if (cursor->ifa_addr->sa_family == AF_INET && (cursor->ifa_flags & IFF_LOOPBACK) == 0) // this second test keeps from picking up the loopback address
             {
                 NSString *name = [NSString stringWithUTF8String:cursor->ifa_name];
-                if ([name isEqualToString:@"en0"]) { // found the WiFi adapter
-                    return [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)cursor->ifa_addr)->sin_addr)];
-                }
+                NSString * ip = [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)cursor->ifa_addr)->sin_addr)];
+                if ([name isEqualToString:@"en0"])
+                    prodIp = ip;
+                else if ([ip hasPrefix:@"192.168.43."])
+                    devIp = ip;
             }
             
             cursor = cursor->ifa_next;
         }
         freeifaddrs(addrs);
     }
-    return NULL;
+    return prodIp ? prodIp : devIp;
 }
 
 
@@ -447,59 +363,45 @@ static ClientController * _applicationInstance;
     {
         // Try to get a file that we need artwork for, if we can't find one then we sit and
         // wait for the next try
-        NSArray * files = [[AudioFileFactory applicationInstance] audioFilesWithoutArtwork];
-        if (!files || files.count < 1)
+        NSArray * artistsWithoutArtwork = [[AudioFileFactory applicationInstance] artistsWithoutArtwork];
+        NSDictionary * albumsWithoutArtwork = [[AudioFileFactory applicationInstance] albumsWithoutArtwork];
+        
+        if (albumsWithoutArtwork.count + artistsWithoutArtwork.count == 0)
         {
             [NSThread sleepForTimeInterval:5];
             continue;
         }
         
-        NSMutableArray * processedArtists = [NSMutableArray array];
-        NSMutableArray * processedAlbums = [NSMutableArray array];
-        for (AudioFile * file in files)
+        // First process artists
+        for (NSString * artist in artistsWithoutArtwork)
         {
-            // Determine what we need to parse from this item.  If in this loop we've already
-            // got the data since we read from database then skip it
-            BOOL getArtistImage = !file.artistArtworkFile;
-            BOOL getAlbumImage = !file.artistArtworkFile;
-            if (getArtistImage && [processedArtists containsObject:file.artist])
-                getArtistImage = NO;
-            if (getAlbumImage && [processedAlbums containsObject:[NSString stringWithFormat:@"%@||%@", file.artist, file.album]])
-                getAlbumImage = NO;
-            if ((!getArtistImage) && (!getAlbumImage))
-                continue;
-            
-            // Add this item to the processed lists so we don't re-try this same loop
-            if (getArtistImage)
-                [processedArtists addObject:file.artist];
-            if (getAlbumImage)
-                [processedAlbums addObject:[NSString stringWithFormat:@"%@||%@", file.artist, file.album]];
-            
-            // Determine the correct client
-            if (![_carputerDevices containsKey:file.device])
-                continue;
-            CommandClient * client;
-            @synchronized (_carputerDevices)
-            {
-                client = [_commandClients valueForKey:file.device];
-            }
-            
-            // Put together a request to get the album/artist (or both) artwork for this file
-            // and send to the appropriate command client
-            ArtworkGetCommand * command = nil;
-            if (!getAlbumImage)
-                command = [[ArtworkGetCommand alloc] initWithArtist:file.artist];
-            else
-                command = [[ArtworkGetCommand alloc] initWithArtist:file.artist album:file.album getArtistImage:getArtistImage];
-            
-            // Execute the command and await completion
+            ArtworkGetCommand * command = [[ArtworkGetCommand alloc] initWithArtist:artist];
             _awaitingArtworkResponse = YES;
-            _artworkAudioFile = file;
-            [client sendCommand:command withTarget:self successSelector:@selector(audioArtworkResponseSuccess:) failedSelector:@selector(audioArtworkResponseFail:)];
+            _artworkLookupArtist = artist;
+            [self sendCommand:command withTarget:self successSelector:@selector(audioArtworkResponseSuccess:) failedSelector:@selector(audioArtworkResponseFail:)];
             NSDate * endDate = [NSDate dateWithTimeIntervalSinceNow:5];
             while (_awaitingArtworkResponse && [[NSDate date] timeIntervalSinceDate:endDate] < 5)
                 [NSThread sleepForTimeInterval:0.1];
-            _artworkAudioFile = nil;
+            _artworkLookupArtist = nil;
+        }
+        
+        // Now process albums
+        for (NSString * artist in [albumsWithoutArtwork allKeys])
+        {
+            NSArray * albums = [albumsWithoutArtwork objectForKey:artist];
+            for (NSString * album in albums)
+            {
+                ArtworkGetCommand * command = [[ArtworkGetCommand alloc] initWithArtist:artist album:album getArtistImage:NO];
+                _awaitingArtworkResponse = YES;
+                _artworkLookupArtist = artist;
+                _artworkLookupAlbum = album;
+                [self sendCommand:command withTarget:self successSelector:@selector(audioArtworkResponseSuccess:) failedSelector:@selector(audioArtworkResponseFail:)];
+                NSDate * endDate = [NSDate dateWithTimeIntervalSinceNow:5];
+                while (_awaitingArtworkResponse && [[NSDate date] timeIntervalSinceDate:endDate] < 5)
+                    [NSThread sleepForTimeInterval:0.1];
+                _artworkLookupArtist = nil;
+                _artworkLookupAlbum = nil;
+            }
         }
         
         // Wait another minute before we try again
@@ -513,14 +415,6 @@ static ClientController * _applicationInstance;
     // Log the success
     ArtworkGetResponse * artworkResponse = response.response;
     
-    // Get path data
-    NSArray * paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString * artworkDirectory = [[paths lastObject] stringByAppendingPathComponent:@"artwork"];
-    NSFileManager * fileManager = [NSFileManager defaultManager];
-    BOOL isDir = YES;
-    BOOL isDirExists = [fileManager fileExistsAtPath:artworkDirectory isDirectory:&isDir];
-    if (!isDirExists) [fileManager createDirectoryAtPath:artworkDirectory withIntermediateDirectories:YES attributes:nil error:nil];
-    
     // Skip if no images available
     if ((!artworkResponse.artistImageAvailable) && (!artworkResponse.albumImageAvailable))
     {
@@ -530,19 +424,11 @@ static ClientController * _applicationInstance;
     
     // Save the artist image to disk if requested and provided and update the object accordingly
     if ((artworkResponse.requestedGetArtistImage) && ([artworkResponse.artistImageAvailable boolValue]))
-    {
-        NSString * filePath = [artworkDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"artist%d.png", [_artworkAudioFile.id intValue]]];
-        [artworkResponse.artistImageData writeToFile:filePath atomically:NO];
-        [[AudioFileFactory applicationInstance] setArtworkForArtist:_artworkAudioFile.artist withFile:filePath];
-    }
+        [[AudioFileFactory applicationInstance] setArtworkForArtist:_artworkLookupArtist data:artworkResponse.artistImageData];
     
     // Now do the same for the album image
     if ((artworkResponse.requestedGetAlbumImage) && ([artworkResponse.albumImageAvailable boolValue]))
-    {
-        NSString * filePath = [artworkDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"album%d.png", [_artworkAudioFile.id intValue]]];
-        [artworkResponse.albumImageData writeToFile:filePath atomically:NO];
-        [[AudioFileFactory applicationInstance] setArtworkForArtist:_artworkAudioFile.artist album:_artworkAudioFile.album withFile:filePath];
-    }
+        [[AudioFileFactory applicationInstance] setArtworkForArtist:_artworkLookupArtist album:_artworkLookupAlbum data:artworkResponse.albumImageData];
     
     // Send a notification to any clients that may be listening
     [[NSNotificationCenter defaultCenter] postNotificationName:kClientControllerNewArtworkNotificationName object:artworkResponse];

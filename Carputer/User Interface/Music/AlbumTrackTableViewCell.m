@@ -3,7 +3,7 @@
 #import "ClientController.h"
 
 @implementation AlbumTrackTableViewCell
-- (void)setupCellForAudioFile:(AudioFile *)audioFile {
+- (void)setupCellForAudioFile:(NetworkAudioFile *)audioFile {
     self.backgroundColor = [UIColor blackColor];
     self.selectionStyle = UITableViewCellSelectionStyleNone;
     _audioFile = audioFile;
@@ -22,8 +22,8 @@
 
 - (IBAction)queuePressed:(id)sender {
     // Determine the audio file for this item and play it wiping existing queue
-    PlaylistQueueCommand * command = [[PlaylistQueueCommand alloc] initWithAudioFileIds:[NSArray arrayWithObject:_audioFile.id] replaceCurrentQueue:NO];
-    [[ClientController applicationInstance] sendAudioCommand:command withTarget:self successSelector:nil failedSelector:@selector(audioPlaybackFailed)];
+    PlaylistQueueCommand * command = [[PlaylistQueueCommand alloc] initWithAudioFileIds:[NSArray arrayWithObject:_audioFile.audioFileId] replaceCurrentQueue:NO];
+    [[ClientController applicationInstance] sendCommand:command withTarget:self successSelector:nil failedSelector:@selector(audioPlaybackFailed)];
     return;
 }
 

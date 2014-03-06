@@ -2,21 +2,16 @@
 
 @interface CarputerDevice : NSObject {
     @private
-    BOOL _audioSupport;
     NSString * _ipAddress;
-    NSString * _hostname;
     ushort _commandPort;
     ushort _notificationPort;
-    NSDate * _lastUpdated;
+    NSString * _serialNumber;
 }
 
-@property (assign, readonly) BOOL audioSupport;
 @property (strong, readonly) NSString * ipAddress;
-@property (strong, readonly) NSString * hostname;
 @property (assign, readonly) ushort commandPort;
 @property (assign, readonly) ushort notificationPort;
-@property (assign, readonly) NSString * serialNumber;
-@property (strong) NSDate * lastUpdated;
+@property (strong) NSString * serialNumber;
 
-- (id)initWithIpAddress:(NSString *)ipAddress hostname:(NSString *)hostname commandPort:(ushort)commandPort notificationPort:(ushort)notificationPort audioSupport:(BOOL)audioSupport serialNumber:(NSString *)serialNumber;
+- (id)initWithIpAddress:(NSString *)ipAddress commandPort:(ushort)commandPort notificationPort:(ushort)notificationPort;
 @end

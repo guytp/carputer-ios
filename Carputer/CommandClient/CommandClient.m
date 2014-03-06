@@ -174,6 +174,7 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
         int length = 0;
         int totalBytesRead = 0;
         int nextBytesToRead = 4;
+        BOOL isException = NO;
         while ((bytesRead = [_commandInputStream read:buf maxLength:nextBytesToRead]) > 0)
         {
             // Return if cancelled
@@ -198,6 +199,11 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
             {
                 NSData * lengthData = [readBuffer subdataWithRange:NSMakeRange(0, 4)];
                 length = ntohl(*(int*)([lengthData bytes]));
+                if (length < 0)
+                {
+                    isException = YES;
+                    length *= -1;
+                }
                 if (length == 0)
                 {
                     // There's no data as part of this message so just return firing failed seletor
@@ -251,6 +257,20 @@ NSString * kCommandClientErrorDomain = @"CommandClientErrorDomain";
         // Read out length then the JSON response object and parse to the command if required
         NSError * parseError;
         id jsonObject = [NSJSONSerialization JSONObjectWithData:readBuffer options:kNilOptions error:&parseError];
+        if (isException)
+        {
+            NSString * errorCode = [jsonObject valueForKey:@"ErrorCode"];
+            NSString * message = [jsonObject valueForKey:@"Message"];
+            NSString * details = [jsonObject valueForKey:@"Details"];
+            NSLog(@"Fatal error from CommandClient\r\nCode: %@\r\nMessage: %@\r\n%@", errorCode, message, details);
+            NSMutableDictionary * userInfo = [NSMutableDictionary dictionary];
+            [userInfo setObject:errorCode forKey:@"ErrorCode"];
+            [userInfo setObject:message forKey:@"Message"];
+            [userInfo setObject:details forKey:@"Details"];
+            NSError * error = [[NSError alloc] initWithDomain:kCommandClientErrorDomain code:CommandClientErrorRemoteException userInfo:userInfo];
+            [target performSelectorInBackground:failedSelector withObject:error];
+            return;
+        }
         id result;
         if (!parseError)
             result = [command parseResponse:jsonObject withError:&parseError];

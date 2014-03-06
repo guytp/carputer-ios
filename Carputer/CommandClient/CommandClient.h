@@ -11,7 +11,8 @@ enum CommandClientError {
     CommandClientErrorUnexpectedResponse = 3,
     CommandClientErrorResponseParseFail = 4,
     CommandClientErrorSerialiseFail = 5,
-    CommandClientErrorRequestTimeout = 6
+    CommandClientErrorRequestTimeout = 6,
+    CommandClientErrorRemoteException = 7
     };
 
 @interface CommandClient : NSObject <NSStreamDelegate> {

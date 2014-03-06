@@ -212,21 +212,26 @@ static NSMutableDictionary * _lastNotifications = nil;
             continue;
         }
         
-        // Get the notification object and send it out
-        id notificationObject = [processor notificationObjectForJson:jsonObject deviceSerialNumber:_serialNumber];
-        if (parseError || !notificationObject)
-        {
-            NSLog(@"Notification client has no object to post for %d.%d notification", notificationCode, opCode);
-            continue;
-        }
-        NSString * notificationTypeKey = NSStringFromClass([notificationObject class]);
-        @synchronized (_lastNotifications)
-        {
-            [_lastNotifications setObject:notificationObject forKey:notificationTypeKey];
-        }
-//        NSLog(@"Notification client posting %d.%d notification as %@", notificationCode, opCode, notificationObject);
-        [[NSNotificationCenter defaultCenter] postNotificationName:kNotificationClientNotificationName object:notificationObject];
+        NSArray * values = [NSArray arrayWithObjects:processor, jsonObject, nil];
+//        [self performSelectorInBackground:@selector(handleNotification:) withObject:values];
+        [self handleNotification:values];
     }
+}
+
+- (void)handleNotification:(NSArray *)values {
+    NotificationProcessorBase * processor = [values objectAtIndex:0];
+    NSString * jsonObject = [values objectAtIndex:1];
+    // Get the notification object and send it out
+    id notificationObject = [processor notificationObjectForJson:jsonObject deviceSerialNumber:_serialNumber];
+    if (!notificationObject)
+        return;
+    NSString * notificationTypeKey = NSStringFromClass([notificationObject class]);
+    @synchronized (_lastNotifications)
+    {
+        [_lastNotifications setObject:notificationObject forKey:notificationTypeKey];
+    }
+    //        NSLog(@"Notification client posting %d.%d notification as %@", notificationCode, opCode, notificationObject);
+    [[NSNotificationCenter defaultCenter] postNotificationName:kNotificationClientNotificationName object:notificationObject];
 }
 
 - (void)stream:(NSStream *)aStream handleEvent:(NSStreamEvent)eventCode {

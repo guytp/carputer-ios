@@ -43,7 +43,7 @@
     NSMutableArray * playlist = [NSMutableArray array];
     for (NSNumber * track in tracks)
     {
-        AudioFile * audioFile = [[AudioFileFactory applicationInstance] readForId:track forDevice:deviceSerialNumber];
+        NetworkAudioFile * audioFile = [[AudioFileFactory applicationInstance] readForId:track forDevice:deviceSerialNumber];
         if (audioFile)
             [playlist addObject:audioFile];
     }

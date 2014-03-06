@@ -40,7 +40,7 @@
     {
         for (NSNumber * fileId in deletedFileIds)
         {
-            AudioFile * audioFile = [[AudioFileFactory applicationInstance] readForId:fileId forDevice:deviceSerialNumber];
+            NetworkAudioFile * audioFile = [[AudioFileFactory applicationInstance] readForId:fileId forDevice:deviceSerialNumber];
             if (audioFile)
             [deletedFiles addObject:audioFile];
         }
@@ -52,7 +52,7 @@
     {
         for (NSNumber * fileId in offlineFileIds)
         {
-            AudioFile * audioFile = [[AudioFileFactory applicationInstance] readForId:fileId forDevice:deviceSerialNumber];
+            NetworkAudioFile * audioFile = [[AudioFileFactory applicationInstance] readForId:fileId forDevice:deviceSerialNumber];
             if (audioFile)
                 [offlineFiles addObject:audioFile];
         }

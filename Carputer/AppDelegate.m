@@ -17,6 +17,9 @@
     self.window.backgroundColor = [UIColor blackColor];
     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent];
     
+    // Disable idle timer
+    [UIApplication sharedApplication].idleTimerDisabled = YES;
+    
     // Start the client controller
     _clientController = [ClientController applicationInstance];
     _clientController.delegate = self;

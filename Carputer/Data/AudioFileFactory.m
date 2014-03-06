@@ -1,12 +1,23 @@
 #import "AudioFileFactory.h"
-#import "NetworkAudioFile.h"
+#import "NSDictionary+Dictionary_ContainsKey.h"
+#import "NSMutableArray+NSMutableArray_AlbumSort.h"
 
 @interface AudioFileFactory()
 - (void)setAllOfflineAndRemoveOld;
-- (AudioFile *)unlockedReadForId:(NSNumber *)audioFileId forDevice:(NSString *)deviceIdentifier;
+- (void)addNewFile:(NetworkAudioFile *)file;
+- (void)removeFile:(NetworkAudioFile *)file;
+- (BOOL)artworkExistsForArtist:(NSString *)artist;
+- (BOOL)artworkExistsForArtist:(NSString *)artist album:(NSString *)album;
+- (NSString *)artworkFilenameForArtist:(NSString *)artist;
+- (NSString *)artworkFilenameForArtist:(NSString *)artist album:(NSString *)album;
+- (NSString *)artworkPathForArtist:(NSString *)artist;
+- (NSString *)artworkPathForArtist:(NSString *)artist album:(NSString *)album;
+- (NetworkAudioFile *)mergeAudioFile:(NetworkAudioFile *)networkAudioFile withExistingObjects:(NSDictionary *)allExistingObjects withNewObjectArray:(NSMutableArray *)newObjects;
 @end
 
 @implementation AudioFileFactory
+#pragma mark -
+#pragma mark Initialisation
 static AudioFileFactory * _applicationInstance;
 
 + (AudioFileFactory *)applicationInstance
@@ -33,414 +44,442 @@ static AudioFileFactory * _applicationInstance;
     if (!self)
         return nil;
     
-    // Setup the factory
+    // Setup our mapping objects
+    _allObjects = [NSMutableArray array];
+    _allObjectsById = [NSMutableDictionary dictionary];
+    _artists = [NSMutableArray array];
+    _albumsForArtist = [NSMutableDictionary dictionary];
+    _lowercaseArtists = [NSMutableArray array];
+    _artistsWithArtwork = [NSMutableArray array];
+    _albumsWithArtwork = [NSMutableArray array];
+    _lowercaseAlbums = [NSMutableArray array];
+    _syncLocker = [[NSObject alloc] init];
+    
+    // Determine file storage for artwork
     NSArray * paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString * documentsDirectory = [paths lastObject];
-    NSString * persistentStorePath = [documentsDirectory stringByAppendingPathComponent:@"Carputer.sqlite"];
-    NSURL * storeUrl = [NSURL fileURLWithPath:persistentStorePath];
-    _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[NSManagedObjectModel mergedModelFromBundles:nil]];
-    NSError * error = nil;
-    NSPersistentStore * persistentStore = [_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeUrl options:nil error:&error];
-    NSAssert3(persistentStore != nil, @"Unhandled error adding persistent store in %s at line %d: %@", __FUNCTION__, __LINE__, [error localizedDescription]);
-    _context = [[NSManagedObjectContext alloc] init];
-    [_context setPersistentStoreCoordinator:_persistentStoreCoordinator];
+    NSString * artworkDirectory = [[paths lastObject] stringByAppendingPathComponent:@"artwork"];
+    _artistArtworkBasePath = [artworkDirectory stringByAppendingPathComponent:@"artists"];
+    _albumArtworkBasePath = [artworkDirectory stringByAppendingPathComponent:@"albums"];
+    NSFileManager * fileManager = [NSFileManager defaultManager];
+    BOOL isDir = YES;
+    BOOL isDirExists = [fileManager fileExistsAtPath:_artistArtworkBasePath isDirectory:&isDir];
+    if (!isDirExists) [fileManager createDirectoryAtPath:_artistArtworkBasePath withIntermediateDirectories:YES attributes:nil error:nil];
+    isDirExists = [fileManager fileExistsAtPath:_albumArtworkBasePath isDirectory:&isDir];
+    if (!isDirExists) [fileManager createDirectoryAtPath:_albumArtworkBasePath withIntermediateDirectories:YES attributes:nil error:nil];
     
     // Return self
     return self;
 }
 
-- (AudioFile *)audioFileFromNetworkAudioFile:(NetworkAudioFile *)networkAudioFile onDevice:(NSString *)deviceIdentifier {
-    
-    // First try to get managed instance of this
-    AudioFile * audioFile = [self unlockedReadForId:networkAudioFile.audioFileId forDevice:deviceIdentifier];
-    NSString * originalArtist = nil;
-    NSString * originalAlbum = nil;
-    if (!audioFile)
+
+#pragma mark -
+#pragma mark Merging
+- (void)addNewFile:(NetworkAudioFile *)file {
+    if ([self readForId:file.audioFileId forDevice:file.device])
     {
-        audioFile = [NSEntityDescription insertNewObjectForEntityForName:@"AudioFile" inManagedObjectContext:_context];
-        audioFile.id = networkAudioFile.audioFileId;
-        audioFile.device = deviceIdentifier;
+//        NSLog(@"Oops already exists!");
+    }
+    [_allObjects addObject:file];
+    [_allObjectsById setObject:file forKey:file.primaryKey];
+    NSString * lowercaseArtist = [file.artist lowercaseString];
+    if (![_lowercaseArtists containsObject:lowercaseArtist])
+    {
+        [_lowercaseArtists addObject:lowercaseArtist];
+        [_artists addObject:file.artist];
+        [_artists sortUsingSelector:@selector(caseInsensitiveCompare:)];
+        [_albumsForArtist setObject:[NSMutableArray array] forKey:lowercaseArtist];
+        if ((![_artistsWithArtwork containsObject:lowercaseArtist]) && ([self artworkExistsForArtist:file.artist]))
+            [_artistsWithArtwork addObject:lowercaseArtist];
+    }
+    NSMutableArray * albumsForArtist = [_albumsForArtist objectForKey:lowercaseArtist];
+    NSMutableArray * thisAlbum = nil;
+    NSString * lowercaseAlbum = [file.album lowercaseString];
+    for (NSMutableArray * album in albumsForArtist)
+    {
+        NetworkAudioFile * firstTrack = [album objectAtIndex:0];
+        if ([[firstTrack.album lowercaseString] isEqualToString:lowercaseAlbum])
+        {
+            thisAlbum = album;
+            break;
+        }
+    }
+    if (!thisAlbum)
+    {
+        thisAlbum = [NSMutableArray array];
+        [thisAlbum addObject:file];
+        [albumsForArtist addObject:thisAlbum];
+        NSString * artworkKey = [NSString stringWithFormat:@"%@|~|%@", lowercaseArtist, lowercaseAlbum];
+        [_lowercaseAlbums addObject:artworkKey];
+        [albumsForArtist sortUsingSelector:@selector(albumSort:)];
+        if ((![_albumsWithArtwork containsObject:artworkKey]) && ([self artworkExistsForArtist:lowercaseArtist album:lowercaseAlbum]))
+            [_albumsWithArtwork addObject:artworkKey];
     }
     else
     {
-        originalArtist = [audioFile.artist lowercaseString];
-        originalAlbum = [audioFile.album lowercaseString];
+        [thisAlbum addObject:file];
+        [thisAlbum sortUsingSelector:@selector(compareByNumber:)];
     }
-    if (networkAudioFile.trackNumber)
-        audioFile.trackNumber = networkAudioFile.trackNumber;
-    if (networkAudioFile.artist)
-        audioFile.artist = networkAudioFile.artist;
-    if (networkAudioFile.album)
-        audioFile.album = networkAudioFile.album;
-    if (networkAudioFile.title)
-        audioFile.title = networkAudioFile.title;
-    if (networkAudioFile.duration)
-        audioFile.duration = networkAudioFile.duration;
-    if ((originalArtist) || (originalAlbum))
-    {
-        if (![originalArtist isEqualToString:[audioFile.artist lowercaseString]])
-        {
-            audioFile.artistArtworkFile = nil;
-            audioFile.albumArtworkFile = nil;
-        }
-        else if (![originalAlbum isEqualToString:[audioFile.album lowercaseString]])
-            audioFile.albumArtworkFile = nil;
-    }
-    return audioFile;
 }
 
-- (void)mergeChangesForDevice:(NSString *)deviceIdentifier withAudioFiles:(NSArray *)audioFiles
-{
-    NSLog(@"AudioFactory.mergeChangesForDevice starting");
-    NSDate * startDate = [NSDate date];
-    @synchronized (_context)
+- (void)removeFile:(NetworkAudioFile *)file {
+    // TODO: Remove from all lists
+    // Re-sort
+}
+
+
+- (NetworkAudioFile *)mergeAudioFile:(NetworkAudioFile *)networkAudioFile withExistingObjects:(NSDictionary *)allExistingObjects withNewObjectArray:(NSMutableArray *)newObjects {
+    
+    
+    // First try to get managed instance of this
+    NetworkAudioFile * existingFile = [allExistingObjects valueForKey:networkAudioFile.primaryKey];
+    if (!existingFile)
     {
+        [newObjects addObject:networkAudioFile];
+        if ((!networkAudioFile.artist) || (networkAudioFile.artist.length < 1))
+            networkAudioFile.artist = @"Unknown Artist";
+        if ((!networkAudioFile.album) || (networkAudioFile.album.length < 1))
+            networkAudioFile.album = @"Unknown Album";
+        if (!networkAudioFile.trackNumber)
+            networkAudioFile.trackNumber = [NSNumber numberWithInteger:0];
+        return networkAudioFile;
+    }
+    else
+    {
+        //NSLog(@"Existing edit for %@ exists", networkAudioFile.primaryKey);
+        NSString * originalArtist = [existingFile.artist lowercaseString];
+        NSString * originalAlbum = [existingFile.album lowercaseString];
+        if (networkAudioFile.trackNumber)
+            existingFile.trackNumber = networkAudioFile.trackNumber;
+        if (networkAudioFile.artist)
+            existingFile.artist = networkAudioFile.artist;
+        if (networkAudioFile.album)
+            existingFile.album = networkAudioFile.album;
+        if (networkAudioFile.title)
+            existingFile.title = networkAudioFile.title;
+        if (networkAudioFile.duration)
+            existingFile.duration = networkAudioFile.duration;
+        if ((originalArtist) || (originalAlbum))
+        {
+            if (![originalArtist isEqualToString:[networkAudioFile.artist lowercaseString]])
+            {
+                existingFile.artistArtworkFile = nil;
+                existingFile.albumArtworkFile = nil;
+            }
+            else if (![originalAlbum isEqualToString:[networkAudioFile.album lowercaseString]])
+                existingFile.albumArtworkFile = nil;
+        }
+        if ((!existingFile.artist) || (existingFile.artist.length < 1))
+            existingFile.artist = @"Unknown Artist";
+        if ((!existingFile.album) || (existingFile.album.length < 1))
+            existingFile.album = @"Unknown Album";
+        return existingFile;
+    }
+}
+
+- (void)mergeChangesForAudioFiles:(NSArray *)audioFiles
+{
+    @synchronized (_syncLocker)
+    {
+        NSLog(@"AudioFactory.mergeChangesForDevice starting");
+        NSDate * startDate = [NSDate date];
+        NSDictionary * allExistingObjects;
+        @synchronized (_allObjects)
+        {
+            allExistingObjects = [_allObjectsById copy];
+        }
+        NSMutableArray * newObjects = [NSMutableArray array];
         for (NetworkAudioFile * networkAudioFile in audioFiles)
         {
-            // Update common settings
-            AudioFile * audioFile = [self audioFileFromNetworkAudioFile:networkAudioFile onDevice:deviceIdentifier];
-            audioFile.lastSeen = startDate;
-            audioFile.isOnline = [NSNumber numberWithBool:YES];
+            // If this file exists in our existing set then perform a merge of the data, otherwise
+            // create a new file
+            NetworkAudioFile * mergeFile = [self mergeAudioFile:networkAudioFile withExistingObjects:allExistingObjects withNewObjectArray:newObjects];
+            mergeFile.lastSeen = startDate;
+            mergeFile.isOnline = [NSNumber numberWithBool:YES];
         }
         
-        // Save to context
-        NSError * error = nil;
-        [_context save:&error];
-        if (error)
-            NSLog(@"AudioFactory.mergeChangesForDevice failed to insert/update %@", deviceIdentifier);
-        else
-            NSLog(@"AudioFactory.mergeChangesForDevice completed successfully");
+        // If we got any new files then merge them in to the master repository list
+        if ([newObjects count] > 0)
+            @synchronized (_allObjects)
+        {
+            for (NetworkAudioFile * file in newObjects)
+                [self addNewFile:file];
+        }
+        
+        NSLog(@"AudioFactory.mergeChangesForDevice completed successfully with %lu new files and %lu total", (unsigned long)[newObjects count], (unsigned long)[audioFiles count]);
     }
 }
 
 - (void)mergeNotificationChangesForDevice:(NSString *)deviceIdentifier added:(NSArray *)addedFiles deleted:(NSArray *)deletedFiles online:(NSArray *)onlineFiles offline:(NSArray *)offlineFiles updated:(NSArray *)updatedFiles {
-    NSLog(@"mergeNotificationChangesForDevice starting");
-    NSDate * startDate = [NSDate date];
-    @synchronized (_context)
+    @synchronized (_syncLocker)
     {
+        NSDictionary * allExistingObjects;
+        @synchronized (_allObjects)
+        {
+            allExistingObjects = [_allObjectsById copy];
+        }
+        NSMutableArray * newObjects = [NSMutableArray array];
+        NSDate * startDate = [NSDate date];
+        
         // For any online files update their last seen
-        for (NetworkAudioFile * networkAudioFile in onlineFiles)
+        NSArray * arrays = [NSArray arrayWithObjects:onlineFiles, newObjects, updatedFiles, nil];
+        for (NSArray * array in arrays)
+            for (NetworkAudioFile * audioFile in array)
+            {
+                NetworkAudioFile * mergeFile = [self mergeAudioFile:audioFile withExistingObjects:allExistingObjects withNewObjectArray:newObjects];
+                mergeFile.lastSeen = startDate;
+                mergeFile.isOnline = [NSNumber numberWithBool:YES];
+                mergeFile.device = deviceIdentifier;
+            }
+        for (NetworkAudioFile * offlineFile in offlineFiles)
         {
-            AudioFile * audioFile = [self audioFileFromNetworkAudioFile:networkAudioFile onDevice:deviceIdentifier];
-            audioFile.lastSeen = startDate;
-            audioFile.isOnline = [NSNumber numberWithBool:YES];
-        }
-        
-        // For any offline files update their status to now be offline
-        for (AudioFile * offlineFile in offlineFiles)
+            offlineFile.lastSeen = startDate;
             offlineFile.isOnline = [NSNumber numberWithBool:NO];
+        }
         
-        // For any deleted files remove from context
-        for (AudioFile * deletedFile in deletedFiles)
-            [_context deleteObject:deletedFile];
-        
-        // For new files convert from a NetworkAudioFile in to an AudioFile and add to the system
-        for (NetworkAudioFile * networkAudioFile in addedFiles)
+        // Synchronize changes back
+        if (([newObjects count] > 0) || (deletedFiles.count > 0))
+            @synchronized (_allObjects)
         {
-            AudioFile * audioFile = [self audioFileFromNetworkAudioFile:networkAudioFile onDevice:deviceIdentifier];
-            audioFile.lastSeen = startDate;
-            audioFile.isOnline = [NSNumber numberWithBool:YES];
+            if (newObjects.count > 0)
+                for (NetworkAudioFile * file in newObjects)
+                    [self addNewFile:file];
+            if (deletedFiles.count > 0)
+                for (NetworkAudioFile * file in deletedFiles)
+                    [self removeFile:file];
         }
-        
-        // For any updated files update their corresponding counterpart and if it does not exist
-        // then create it
-        for (NetworkAudioFile * networkAudioFile in updatedFiles) {
-            AudioFile * audioFile = [self audioFileFromNetworkAudioFile:networkAudioFile onDevice:deviceIdentifier];
-            audioFile.lastSeen = startDate;
-            audioFile.isOnline = [NSNumber numberWithBool:YES];
-        }
-        
-        // Save to context
-        NSError * error = nil;
-        [_context save:&error];
-        if (error)
-            NSLog(@"AudioFactory.mergeChangesForDevice failed to insert/update %@", deviceIdentifier);
-        else
-            NSLog(@"AudioFactory.mergeChangesForDevice completed successfully");
+        NSLog(@"AudioFactory.mergeChangesForDevice completed successfully");
     }
 }
 
-- (NSArray *)readAllActive
-{
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [[NSCompoundPredicate alloc] initWithType:NSAndPredicateType subpredicates:[NSArray arrayWithObjects:[NSPredicate predicateWithFormat:@"isOnline == YES"], nil]];
-    NSSortDescriptor * artistSort = [[NSSortDescriptor alloc] initWithKey:@"artist" ascending:YES];
-    NSSortDescriptor * albumSort = [[NSSortDescriptor alloc] initWithKey:@"album" ascending:YES];
-    NSSortDescriptor * trackNumberSort = [[NSSortDescriptor alloc] initWithKey:@"trackNumber" ascending:YES];
-    NSSortDescriptor * titleSort = [[NSSortDescriptor alloc] initWithKey:@"title" ascending:YES];
-    fetchRequest.sortDescriptors = [[NSArray alloc] initWithObjects:artistSort, albumSort, trackNumberSort, titleSort, nil];
-    
-    
-    @synchronized (_context)
+
+#pragma mark -
+#pragma mark Reading
+- (NSArray *)availableAlbumsForArtist:(NSString *)artist {
+    NSDictionary * albumCopy;
+    @synchronized (_allObjects)
     {
-        NSError * error = nil;
-        NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
-        {
-            NSLog(@"Failed AudioFileFactory.readAllactive from CoreData: %@", error);
-            return nil;
-        }
-        return results;
+        albumCopy = [_albumsForArtist copy];
+    }
+    if (![albumCopy containsKey:[artist lowercaseString]])
+        return nil;
+    return [[albumCopy objectForKey:[artist lowercaseString]] copy];
+}
+
+- (NSArray *)availableArtists {
+    @synchronized (_allObjects)
+    {
+        return [_artists copy];
     }
 }
 
+- (NetworkAudioFile *)readForId:(NSNumber *)audioFileId forDevice:(NSString *)device {
+    NSString * key = [NSString stringWithFormat:@"%@~%@", audioFileId, device];
+    @synchronized (_allObjects)
+    {
+        return [_allObjectsById containsKey:key] ? [_allObjectsById valueForKey:key] : nil;
+    }
+}
+
+
+#pragma mark -
+#pragma mark Device Control
 - (void)setDeviceOffline:(NSString *)deviceIdentifier
 {
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [[NSCompoundPredicate alloc] initWithType:NSAndPredicateType subpredicates:[NSArray arrayWithObjects:[NSPredicate predicateWithFormat:@"isOnline == YES"], [NSPredicate predicateWithFormat:@"device == %@", deviceIdentifier], nil]];
-    @synchronized (_context)
+    NSArray * allExistingObjects;
+    @synchronized (_allObjects)
     {
-        NSError * error = nil;
-        NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
-        {
-            NSLog(@"Failed AudioFileFactory.setDeviceOffline from CoreData: %@", error);
-            return;
-        }
-        if ((!results) || (results.count < 1))
-        {
-            NSLog(@"No files found to mark offline for device %@", deviceIdentifier);
-            return;
-        }
-        for (AudioFile * file in results)
+        allExistingObjects = [_allObjects copy];
+    }
+    int offlineCount = 0;
+    for (NetworkAudioFile * file in allExistingObjects)
+        if (([file.device isEqualToString:deviceIdentifier]) && ([file.isOnline boolValue]))
         {
             file.isOnline = [NSNumber numberWithBool:NO];
-            NSLog(@"Setting offline for %@", file.id);
+            offlineCount++;
         }
-        [_context save:&error];
-        if (error)
-        {
-            NSLog(@"Failed AudioFileFactory.setDeviceOffline from CoreData: %@", error);
-            return;
-        }
-    }
-}
-
-- (NSArray *)readAllActiveForArtist:(NSString *)artist {
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [[NSCompoundPredicate alloc] initWithType:NSAndPredicateType subpredicates:[NSArray arrayWithObjects:[NSPredicate predicateWithFormat:@"isOnline == YES"], [NSPredicate predicateWithFormat:@"artist ==[c] %@", artist], nil]];
-    NSSortDescriptor * artistSort = [[NSSortDescriptor alloc] initWithKey:@"artist" ascending:YES];
-    NSSortDescriptor * albumSort = [[NSSortDescriptor alloc] initWithKey:@"album" ascending:YES];
-    NSSortDescriptor * trackNumberSort = [[NSSortDescriptor alloc] initWithKey:@"trackNumber" ascending:YES];
-    NSSortDescriptor * titleSort = [[NSSortDescriptor alloc] initWithKey:@"title" ascending:YES];
-    fetchRequest.sortDescriptors = [[NSArray alloc] initWithObjects:artistSort, albumSort, trackNumberSort, titleSort, nil];
-    
-    
-    @synchronized (_context)
-    {
-        NSError * error = nil;
-        NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
-        {
-            NSLog(@"Failed AudioFileFactory.readAllactiveForArtist from CoreData: %@", error);
-            return nil;
-        }
-        return results;
-    }
+    if (offlineCount == 0)
+        NSLog(@"No files found to mark offline for device %@", deviceIdentifier);
+    else
+        NSLog(@"Marked %d files offline for device %@", offlineCount, deviceIdentifier);
 }
 
 - (void)setAllOfflineAndRemoveOld {
-    @synchronized (_context)
+    NSArray * allExistingObjects;
+    @synchronized (_allObjects)
     {
-        NSLog(@"AudioFileFactory.setAllOfflineAndRemoveOld starting");
-        
-        NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-        NSError * error = nil;
-        NSArray * audioFiles = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
+        allExistingObjects = [_allObjects copy];
+    }
+    int offlineCount = 0;
+    NSMutableArray * toDelete = [NSMutableArray array];
+    double maxSeen = 3600 * 24 * 28;
+    for (NetworkAudioFile * file in allExistingObjects)
+    {
+        double lastSeen = [file.lastSeen timeIntervalSinceNow] * -1;
+        if (lastSeen > maxSeen)
         {
-            NSLog(@"AudioFileFactory.setAllOfflineAndRemoveOld failed to read existing");
-            return;
+            [toDelete addObject:file];
         }
-        double maxSeen = 3600 * 24 * 28;
-        for (AudioFile * audioFile in audioFiles)
+        else if ([file.isOnline boolValue])
         {
-            audioFile.isOnline = [NSNumber numberWithBool:NO];
+            file.isOnline = [NSNumber numberWithBool:NO];
+            offlineCount++;
+        }
+    }
+    if (offlineCount == 0)
+        NSLog(@"No files found to mark offline");
+    else
+        NSLog(@"Marked %d files offline", offlineCount);
+    if (toDelete.count > 0)
+    {
+        @synchronized (_allObjects)
+        {
+            for (NetworkAudioFile * file in toDelete)
+                [self removeFile:file];
+        }
+        NSLog(@"Deleted %lu old files", (unsigned long)toDelete.count);
+    }
+    else
+        NSLog(@"No old files found to delete");
+}
+
+#pragma mark -
+#pragma mark Artwork
+- (BOOL)artworkExistsForArtist:(NSString *)artist {
+    return [[NSFileManager defaultManager] fileExistsAtPath:[self artworkPathForArtist:artist]];
+}
+
+- (BOOL)artworkExistsForArtist:(NSString *)artist album:(NSString *)album {
+    return [[NSFileManager defaultManager] fileExistsAtPath:[self artworkPathForArtist:artist album:album]];
+}
+
+- (NSString *)artworkPathForArtist:(NSString *)artist {
+    return [_artistArtworkBasePath stringByAppendingPathComponent:[self artworkFilenameForArtist:artist]];
+}
+
+- (NSString *)artworkPathForArtist:(NSString *)artist album:(NSString *)album {
+    return [_albumArtworkBasePath stringByAppendingPathComponent:[self artworkFilenameForArtist:artist album:album]];
+}
+
+- (NSString *)artworkFilenameForArtist:(NSString *)artist {
+    return [NSString stringWithFormat:@"%@.png", [[artist lowercaseString] stringByReplacingOccurrencesOfString:@"/" withString:@"_"]];
+}
+
+- (NSString *)artworkFilenameForArtist:(NSString *)artist album:(NSString *)album {
+    return [NSString stringWithFormat:@"%@|~|%@.png", [[artist lowercaseString] stringByReplacingOccurrencesOfString:@"/" withString:@"_"], [[album lowercaseString] stringByReplacingOccurrencesOfString:@"/" withString:@"_"]];
+}
+
+- (NSArray *)artistsWithoutArtwork {
+    NSArray * allArtists = [self availableArtists];
+    NSMutableArray * result = [NSMutableArray array];
+    NSArray * artistsWithArtwork;
+    @synchronized (_allObjects)
+    {
+        artistsWithArtwork = [_artistsWithArtwork copy];
+    }
+    for (NSString * artist in allArtists)
+        if ((![artistsWithArtwork containsObject:[artist lowercaseString]]) && (![[artist lowercaseString] isEqualToString:@"unknown artist"]))
+            [result addObject:artist];
+    return result;
+}
+
+// Returns NS Dictionary keyed by artist name and within each key containing an NSArray of all the albums that artist has without artwork available
+- (NSDictionary *)albumsWithoutArtwork {
+    NSMutableDictionary * result = [NSMutableDictionary dictionary];
+    NSArray * albumsWithArtwork;
+    NSArray * lowercaseAlbums;
+    @synchronized (_allObjects)
+    {
+        lowercaseAlbums = [_lowercaseAlbums copy];
+        albumsWithArtwork = [_albumsWithArtwork copy];
+    }
+    for (NSString * album in lowercaseAlbums)
+        if (![albumsWithArtwork containsObject:album])
+        {
+            // Parse out the artist - album pair from this
+            NSArray * parts = [album componentsSeparatedByString:@"|~|"];
+            if (parts.count < 2)
+                continue;
+            NSString * artist = [parts objectAtIndex:0];
+            NSString * album = [parts objectAtIndex:1];
             
-            double lastSeen = [audioFile.lastSeen timeIntervalSinceNow] * -1;
-            if (lastSeen > maxSeen)
-                [_context deleteObject:audioFile];
+            // Skip if either pair is Unknown Artist / Unknown Album
+            if (([artist isEqualToString:@"unknown artist"]) || ([album isEqualToString:@"unknown album"]))
+                continue;
+            
+            // Add to results
+            if (![result containsKey:artist])
+                [result setObject:[NSMutableArray array] forKey:artist];
+            NSMutableArray * albums = [result objectForKey:artist];
+            if (![albums containsObject:album])
+                [albums addObject:album];
         }
-        [_context save:&error];
-        if (error)
-            NSLog(@"AudioFileFactory.setAllOfflineAndRemoveOld error updating: %@", error);
-        else
-            NSLog(@"AudioFileFactory.setAllOfflineAndRemoveOld updated core data successfully");
-    }
-}
-
-- (AudioFile *)readForId:(NSNumber *)audioFileId forDevice:(NSString *)deviceIdentifier
-{
-    @synchronized (_context)
-    {
-        return [self unlockedReadForId:audioFileId forDevice:deviceIdentifier];
-    }
-}
-
-- (AudioFile *)unlockedReadForId:(NSNumber *)audioFileId forDevice:(NSString *)deviceIdentifier
-{
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"id == %@", audioFileId], [NSPredicate predicateWithFormat:@"device == %@", deviceIdentifier]]];
-    NSError * error = nil;
-    NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-    if (error)
-    {
-        NSLog(@"Failed readForId from CoreData: %@", error);
-        return nil;
-    }
-    return [results count] > 0 ? [results objectAtIndex:0] : nil;
-}
-
-- (NSArray *)readAllActiveForDevice:(NSString *)deviceIdentifier notSeenSince:(NSDate *)sinceDate
-{
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"lastSeen < %@", sinceDate], [NSPredicate predicateWithFormat:@"device == %@", deviceIdentifier]]];
-    NSError * error = nil;
-    @synchronized (_context)
-    {
-        NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
-        {
-            NSLog(@"Failed readAllActiveForDevice from CoreData: %@", error);
-            return nil;
-        }
-        return results;
-    }
-}
-
-- (NSArray *)audioFilesWithoutArtwork {
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [NSCompoundPredicate orPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"albumArtworkFile == NULL"], [NSPredicate predicateWithFormat:@"artistArtworkFile == NULL"]]];
-    NSError * error = nil;
-    @synchronized (_context)
-    {
-        NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
-        {
-            NSLog(@"Failed audioFilesWithoutArtwork from CoreData: %@", error);
-            return nil;
-        }
-        return results;
-    }
-}
-
-- (void)setArtworkForArtist:(NSString *)artist withFile:(NSString *)file {
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [NSPredicate predicateWithFormat:@"artist ==[c] %@", artist];
-    NSError * error = nil;
     
-    NSLog(@"Setting %@ to be %@", artist, file);
-    @synchronized (_context)
-    {
-        NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
-        {
-            NSLog(@"Failed setArtworkForArtist (Get) from CoreData: %@", error);
-            return;
-        }
-        if (!results)
-            return;
-        for (AudioFile * audioFile in results)
-            audioFile.artistArtworkFile = file;
-        [_context save:&error];
-        if (error)
-        {
-            NSLog(@"Failed setArtworkForArtist (Update) from CoreData: %@", error);
-            return;
-        }
-    }
+    return result;
 }
 
-- (void)setArtworkForArtist:(NSString *)artist album:(NSString *)album withFile:(NSString *)file {
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"album ==[c] %@", album],[NSPredicate predicateWithFormat:@"artist ==[c] %@", artist]]];
-    NSError * error = nil;
-    
-    NSLog(@"Setting %@ - %@ to be %@", artist, album, file);
-    @synchronized (_context)
-    {
-        NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
-        {
-            NSLog(@"Failed setArtworkForArtistAlbum (Get) from CoreData: %@", error);
-            return;
-        }
-        if (!results)
-            return;
-        for (AudioFile * audioFile in results)
-            audioFile.albumArtworkFile = file;
-        [_context save:&error];
-        if (error)
-        {
-            NSLog(@"Failed setArtworkForArtistAlbum (Update) from CoreData: %@", error);
-            return;
-        }
+- (void)setArtworkForArtist:(NSString *)artist data:(NSData *)data {
+    NSError * error;
+    [data writeToFile:[self artworkPathForArtist:artist] options:0 error:&error];
+    if (error) {
+        NSLog(@"Error writing file for %@ to disk.  %@", artist, error);
+        return;
     }
+    NSString * lowercaseArtist = [artist lowercaseString];
+    if (![_artistsWithArtwork containsObject:lowercaseArtist])
+        [_artistsWithArtwork addObject:lowercaseArtist];
+}
+
+- (void)setArtworkForArtist:(NSString *)artist album:(NSString *)album data:(NSData *)data {
+    NSError * error;
+    [data writeToFile:[self artworkPathForArtist:artist album:album] options:0 error:&error];
+    if (error) {
+        NSLog(@"Error writing file for %@ - %@ to disk.  %@", artist, album, error);
+        return;
+    }
+    NSString * key = [NSString stringWithFormat:@"%@|~|%@", [artist lowercaseString], [album lowercaseString]];
+    if (![_albumsWithArtwork containsObject:key])
+        [_albumsWithArtwork addObject:key];
 }
 
 - (UIImage *)imageForArtist:(NSString *)artist {
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"artistArtworkFile != %@", @""], [NSPredicate predicateWithFormat:@"artistArtworkFile != NULL"],[NSPredicate predicateWithFormat:@"artist ==[c] %@", artist]]];
-    NSError * error = nil;
-    @synchronized (_context)
+    // First - try the artist image
+    if ([self artworkExistsForArtist:artist])
+        return [UIImage imageWithData:[NSData dataWithContentsOfFile:[self artworkPathForArtist:artist]]];
+    
+    // Next let's see if we have any album images for this artist, if so we'll use that
+    NSArray * albumsWithArtwork;
+    @synchronized (_allObjects)
     {
-        NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
-        {
-            NSLog(@"Failed imageForArtist from CoreData: %@", error);
-            return nil;
-        }
-        if ((!results) || (results.count < 1))
-        {
-            // Try to change the request to lookup an album artwork file
-            fetchRequest.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"albumArtworkFile != %@", @""], [NSPredicate predicateWithFormat:@"albumArtworkFile != NULL"],[NSPredicate predicateWithFormat:@"artist ==[c] %@", artist]]];
-            results = [_context executeFetchRequest:fetchRequest error:&error];
-            if (error)
-            {
-                NSLog(@"Failed imageForArtist from CoreData: %@", error);
-                return nil;
-            }
-            if ((!results) || (results.count < 1))
-                return nil;
-            
-            AudioFile * audioFileAlbum = [results objectAtIndex:0];
-            return [UIImage imageWithContentsOfFile:audioFileAlbum.albumArtworkFile];
-        }
-        AudioFile * audioFile = [results objectAtIndex:0];
-        return [UIImage imageWithContentsOfFile:audioFile.artistArtworkFile];
+        albumsWithArtwork = [_albumsWithArtwork copy];
     }
+    NSString * keyPrefix = [NSString stringWithFormat:@"%@|~|", [artist lowercaseString]];
+    for (NSString * key in albumsWithArtwork)
+    {
+        if (![key hasPrefix:keyPrefix])
+            continue;
+        NSArray * parts = [key componentsSeparatedByString:@"|~|"];
+        if (parts.count < 2)
+            continue;
+        NSString * album = [parts objectAtIndex:1];
+        if ([self artworkExistsForArtist:artist album:album])
+            return [UIImage imageWithData:[NSData dataWithContentsOfFile:[self artworkPathForArtist:artist album:album]]];
+    }
+    
+    // Finally we have no possibilities left
+    return nil;
 }
 
 - (UIImage *)imageForArtist:(NSString *)artist album:(NSString *)album {
-    NSFetchRequest * fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"AudioFile"];
-    fetchRequest.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"albumArtworkFile != %@", @""], [NSPredicate predicateWithFormat:@"albumArtworkFile != NULL"],[NSPredicate predicateWithFormat:@"artist == %@", artist],[NSPredicate predicateWithFormat:@"album ==[c] %@", album]]];
-    NSError * error = nil;
-    @synchronized (_context)
-    {
-        NSArray * results = [_context executeFetchRequest:fetchRequest error:&error];
-        if (error)
-        {
-            NSLog(@"Failed imageForArtistAlbum from CoreData: %@", error);
-            return nil;
-        }
-        if ((!results) || (results.count < 1))
-        {
-            // Try to change the request to lookup an artist artwork file
-            fetchRequest.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"artistArtworkFile != %@", @""], [NSPredicate predicateWithFormat:@"artistArtworkFile != NULL"],[NSPredicate predicateWithFormat:@"artist ==[c] %@", artist]]];
-            results = [_context executeFetchRequest:fetchRequest error:&error];
-            if (error)
-            {
-                NSLog(@"Failed imageForArtistAlbum from CoreData: %@", error);
-                return nil;
-            }
-            if ((!results) || (results.count < 1))
-                return nil;
-            
-            AudioFile * audioFileArtist = [results objectAtIndex:0];
-            return [UIImage imageWithContentsOfFile:audioFileArtist.artistArtworkFile];
-        }
-        AudioFile * audioFile = [results objectAtIndex:0];
-        return [UIImage imageWithContentsOfFile:audioFile.albumArtworkFile];
-    }
+    // First - try the album image itself
+    if ([self artworkExistsForArtist:artist album:album])
+        return [UIImage imageWithData:[NSData dataWithContentsOfFile:[self artworkPathForArtist:artist album:album]]];
+    
+    // Now see if we have an artist image
+    if ([self artworkExistsForArtist:artist])
+        return [UIImage imageWithData:[NSData dataWithContentsOfFile:[self artworkPathForArtist:artist]]];
+    
+    // Finally we have no possibilities left
+    return nil;
 }
+
 @end

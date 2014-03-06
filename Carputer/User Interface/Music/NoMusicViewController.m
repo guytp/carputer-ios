@@ -5,6 +5,9 @@
 #import "ArtistCollectionViewController.h"
 
 @implementation NoMusicViewController
+- (void)viewWillDisappear:(BOOL)animated {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
 
 - (void)viewDidLoad
 {
@@ -14,7 +17,9 @@
     // Update the stack within view controller to make us sole parent
     self.navigationController.viewControllers = [NSArray arrayWithObject:self];
     self.navigationController.navigationBarHidden = YES;
+}
 
+- (void)viewWillAppear:(BOOL)animated {
     // Hookup to NSNotificationCenter
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(networkNotification:) name:kNotificationClientNotificationName object:nil];
 }
@@ -32,8 +37,8 @@
     }
     
     // Get a list of files, if still 0 we can just return
-    NSArray * audioFiles = [[AudioFileFactory applicationInstance] readAllActive];
-    if (audioFiles && audioFiles.count < 1)
+    NSArray * availableArtists = [[AudioFileFactory applicationInstance] availableArtists];
+    if ((!availableArtists) || (availableArtists.count < 1))
         return;
     
     // Update the stack to move to Artist Collection View Controller

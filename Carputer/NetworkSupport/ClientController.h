@@ -4,7 +4,7 @@
 #import "ClientControllerDelegate.h"
 #import "CommandClientDelegate.h"
 #import "NotificationClientDelegate.h"
-@class AudioFile;
+@class NetworkAudioFile;
 
 extern NSString * kClientControllerNewArtworkNotificationName;
 
@@ -18,17 +18,15 @@ extern NSString * kClientControllerNewArtworkNotificationName;
     int _lastConnectedCount;
     NSString * _localIp;
     BOOL _awaitingArtworkResponse;
-    AudioFile * _artworkAudioFile;
+    NSString * _artworkLookupArtist;
+    NSString * _artworkLookupAlbum;
 }
 
 + (ClientController *) applicationInstance;
 
 
-@property (assign, readonly) BOOL hasConnectedClients;
 @property (strong) NSObject<ClientControllerDelegate> * delegate;
 
 - (void)sendCommand:(CommandBase *) command withTarget:(id)target successSelector:(SEL)successSelector failedSelector:(SEL)failedSelector;
 
-
-- (void)sendAudioCommand:(CommandBase *) command withTarget:(id)target successSelector:(SEL)successSelector failedSelector:(SEL)failedSelector;
 @end

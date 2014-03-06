@@ -1,5 +1,5 @@
 #import <UIKit/UIKit.h>
-@class AudioFile;
+@class NetworkAudioFile;
 
 @interface NowPlayingViewController : UIViewController <UITableViewDataSource, UITableViewDelegate>
 {
@@ -22,7 +22,7 @@
     IBOutlet UIImageView * _artworkImageView;
     @private
     NSDate * _lastDragSlider;
-    AudioFile * _audioTrack;
+    NetworkAudioFile * _audioTrack;
     NSArray * _playlist;
     int _currentTrack;
     int _isScrubDown;

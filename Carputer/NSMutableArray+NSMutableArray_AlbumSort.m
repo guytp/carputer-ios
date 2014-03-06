@@ -1,13 +1,12 @@
-//
-//  NSMutableArray+NSMutableArray_AlbumSort.m
-//  Carputer
-//
-//  Created by Guy Powell on 18/02/2014.
-//  Copyright (c) 2014 Guytp. All rights reserved.
-//
-
 #import "NSMutableArray+NSMutableArray_AlbumSort.h"
+#import "NetworkAudioFile.h"
 
 @implementation NSMutableArray (NSMutableArray_AlbumSort)
+
+- (NSComparisonResult)albumSort:(NSMutableArray *)otherObject {
+    NetworkAudioFile * trackOneSelf = [(NSMutableArray *)self objectAtIndex:0];
+    NetworkAudioFile * trackOneOther = [otherObject objectAtIndex:0];
+    return [[trackOneSelf.album lowercaseString] compare:[trackOneOther.album lowercaseString]];
+}
 
 @end

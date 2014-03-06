@@ -17,8 +17,12 @@
 
 - (void)setupForArtist:(NSString *)artist withImage:(UIImage *)image {
     // Register for notifications if we haven't yet
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(artworkNotification:) name:kNotificationClientNotificationName object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(artworkNotification:) name:kClientControllerNewArtworkNotificationName object:nil];
+    if (!_registeredNotifications)
+    {
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(artworkNotification:) name:kNotificationClientNotificationName object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(artworkNotification:) name:kClientControllerNewArtworkNotificationName object:nil];
+        _registeredNotifications = YES;
+    }
     
     // Setup views from details supplied
     _label.text = artist;
@@ -29,13 +33,20 @@
     
     // If no image is supplied then fill with a random colour
     if (!image)
-    {
-        CGFloat hue = ( arc4random() % 256 / 256.0 );
-        CGFloat saturation = ( arc4random() % 128 / 256.0 ) + 0.5;
-        CGFloat brightness = ( arc4random() % 128 / 256.0 ) + 0.5;
-        _imageView.backgroundColor = [UIColor colorWithHue:hue saturation:saturation brightness:brightness alpha:1];
+    //{
+        _imageView.image = [UIImage imageNamed:@"MusicFolderWooden"];
+        /*
+        if (!_randomColour)
+        {
+            CGFloat hue = ( arc4random() % 256 / 256.0 );
+            CGFloat saturation = ( arc4random() % 128 / 256.0 ) + 0.5;
+            CGFloat brightness = ( arc4random() % 128 / 256.0 ) + 0.5;
+            _randomColour = [UIColor colorWithHue:hue saturation:saturation brightness:brightness alpha:1];
+        }
+        _imageView.backgroundColor = _randomColour;
     }
     else
+         */
         _imageView.backgroundColor = [UIColor clearColor];
 }
 
